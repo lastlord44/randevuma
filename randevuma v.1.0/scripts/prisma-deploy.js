@@ -10,8 +10,8 @@ try {
     console.log('[prisma-deploy] Running: prisma migrate deploy (production)');
     execSync('npx prisma migrate deploy', { stdio: 'inherit' });
   } else if (isPreview) {
-    console.log('[prisma-deploy] Running: prisma db push (preview)');
-    execSync('npx prisma db push', { stdio: 'inherit' });
+    console.log('[prisma-deploy] Running: prisma db push --accept-data-loss (preview)');
+    execSync('npx prisma db push --accept-data-loss', { stdio: 'inherit' });
   } else {
     console.log('[prisma-deploy] Running: prisma generate (development)');
     execSync('npx prisma generate', { stdio: 'inherit' });
@@ -22,4 +22,3 @@ try {
   console.error('[prisma-deploy] ❌ Prisma setup failed:', error.message);
   process.exit(1);
 }
-
