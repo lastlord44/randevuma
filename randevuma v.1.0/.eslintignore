@@ -2,3 +2,4 @@ node_modules
 .next
 app/generated/**
 app/**/prisma/wasm.js
+

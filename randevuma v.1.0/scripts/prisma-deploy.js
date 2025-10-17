@@ -22,3 +22,4 @@ try {
   console.error('[prisma-deploy] ❌ Prisma setup failed:', error.message);
   process.exit(1);
 }
+
