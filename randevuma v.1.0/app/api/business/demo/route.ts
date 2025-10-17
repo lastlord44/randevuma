@@ -9,6 +9,19 @@ export async function GET() {
       take: 20,
       select: { id: true, name: true, startsAt: true, createdAt: true },
     });
+    
+    // Eğer veri yoksa, örnek veri döndür
+    if (items.length === 0) {
+      return NextResponse.json([
+        {
+          id: "demo-1",
+          name: "Demo Randevu",
+          startsAt: new Date().toISOString(),
+          createdAt: new Date().toISOString()
+        }
+      ]);
+    }
+    
     return NextResponse.json(items);
   } catch (error) {
     console.error('Error fetching bookings:', error);
