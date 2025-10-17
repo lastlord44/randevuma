@@ -1,9 +1,9 @@
 import type { MetadataRoute } from "next";
+import { baseUrl } from "@/lib/baseUrl";
 
 export default function robots(): MetadataRoute.Robots {
-  const base = process.env.NEXT_PUBLIC_SITE_URL || "https://randevuma.com";
   return {
     rules: [{ userAgent: "*", allow: "/" }],
-    sitemap: `${base}/sitemap.xml`,
+    sitemap: `${baseUrl}/sitemap.xml`,
   };
 }
