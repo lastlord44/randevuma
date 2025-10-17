@@ -165,3 +165,10 @@ Proje hakkında sorularınız için: [GitHub Issues](https://github.com/lastlord
 ---
 
 **MVP v1.0** - Sprint 1 ✨
+
+## 🚀 Production Status
+
+- ✅ **Live Site**: https://randevuma.com
+- ✅ **API Endpoint**: https://randevuma.com/api/business/demo  
+- ✅ **Booking Demo**: https://randevuma.com/b/demo
+- ✅ **Health Check**: https://randevuma.com/api/health

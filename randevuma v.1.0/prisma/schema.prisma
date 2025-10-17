@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // Pooler (6543) - runtime
+  directUrl = env("DIRECT_URL")   // Direct  (5432) - migrate/seed
 }
 
 model User {
@@ -125,4 +126,15 @@ model Appointment {
   @@index([serviceId])
   @@index([staffId])
   @@index([date])
+}
+
+model Booking {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  note      String?
+  startsAt  DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
