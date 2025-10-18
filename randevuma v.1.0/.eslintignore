@@ -3,3 +3,4 @@ node_modules
 app/generated/**
 app/**/prisma/wasm.js
 
+

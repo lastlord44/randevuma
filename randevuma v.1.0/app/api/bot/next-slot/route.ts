@@ -13,9 +13,10 @@ export async function GET() {
   for (let i = 0; i < 16; i++) {
     const exists = await prisma.booking.findFirst({ where: { startsAt: toUTC(slotTR) } });
     if (!exists) {
-      return NextResponse.json({ ok: true, slotTR: slotTR.toISOString(), slotUTC: toUTC(slotTR).toISOString() }, {
-        headers: { "cache-control": "no-store" }
-      });
+      return NextResponse.json(
+        { ok: true, slotTR: slotTR.toISOString(), slotUTC: toUTC(slotTR).toISOString() },
+        { headers: { "cache-control": "no-store" } }
+      );
     }
     slotTR = new Date(slotTR.getTime() + 30 * 60 * 1000);
   }

@@ -24,7 +24,7 @@ export async function POST(req: Request) {
       select: { id: true, name: true, startsAt: true },
     });
 
-    return NextResponse.json({ ok: true, booking: created }, { headers: { "cache-control": "no-store" }});
+    return NextResponse.json({ ok: true, booking: created }, { headers: { "cache-control": "no-store" } });
   } catch (e: any) {
     const msg = String(e?.message || "");
     if (msg.includes("Unique") || msg.includes("unique")) {
