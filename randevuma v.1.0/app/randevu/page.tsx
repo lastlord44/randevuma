@@ -36,11 +36,11 @@ export default function RandevuBot() {
       });
       const data = await r.json();
       if (r.ok) {
-        alert('Randevu alindi');
+        alert('✅ Randevu alindi');
         setName(''); setEmail(''); setPhone(''); setNote('');
         loadNextSlot(); // yeni uygun slotu getir
       } else {
-        alert(`Hata: ${data?.error ?? r.status}`);
+        alert(`❌ Hata: ${data?.error ?? r.status}`);
         if (r.status === 409) {
           loadNextSlot(); // slot doluysa siradaki slotu goster
         }
