@@ -11,7 +11,7 @@ const url = process.env.DATABASE_URL;
 
 console.log(`[prisma-deploy] env=${env}`);
 if (!url) {
-  console.error("[prisma-deploy] DATABASE_URL yok! Build'i durduruyorum.");
+  console.error("[prisma-deploy] DATABASE_URL missing. Failing build to avoid stale deploy.");
   process.exit(1);
 }
 
@@ -24,7 +24,6 @@ try {
   }
   console.log("[prisma-deploy] OK");
 } catch (e) {
-  console.error("[prisma-deploy] HATA:", e?.message || e);
+  console.error("[prisma-deploy] ERROR:", e?.message || e);
   process.exit(1);
 }
-
