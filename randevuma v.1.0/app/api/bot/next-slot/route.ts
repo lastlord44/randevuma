@@ -9,10 +9,7 @@ const toTR = (d = new Date()) => new Date(d.toLocaleString("en-US", { timeZone: 
 const toUTC = (trDate: Date) => new Date(trDate.getTime() - trDate.getTimezoneOffset() * 60000);
 
 export async function GET() {
-  let slotTR = toTR();
-  slotTR.setDate(slotTR.getDate() + 1);
-  slotTR.setHours(10, 0, 0, 0);
-
+  let slotTR = toTR(); slotTR.setDate(slotTR.getDate() + 1); slotTR.setHours(10,0,0,0);
   for (let i = 0; i < 16; i++) {
     const exists = await prisma.booking.findFirst({ where: { startsAt: toUTC(slotTR) } });
     if (!exists) {

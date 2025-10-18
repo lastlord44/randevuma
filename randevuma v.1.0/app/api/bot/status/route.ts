@@ -15,10 +15,7 @@ export async function GET() {
     return NextResponse.json({
       ok: true,
       env: process.env.VERCEL_ENV || process.env.NODE_ENV,
-      lastBooking: last ? {
-        ...last,
-        startsAtTR: tr(last.startsAt).toISOString(),
-      } : null
+      lastBooking: last ? { ...last, startsAtTR: tr(last.startsAt).toISOString() } : null
     });
   } catch (e:any) {
     return NextResponse.json({ ok:false, error:e?.message||"server" }, { status:500 });
