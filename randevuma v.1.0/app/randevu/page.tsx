@@ -25,30 +25,24 @@ export default function RandevuBot() {
     }
   }
 
-  async function bookSlot() {
-    if (!slot || !name.trim()) return;
-    
+  async function bookNow() {
+    if (!slot?.slotTR) { alert('Uygun saat bulunamadi'); return; }
     setLoading(true);
     try {
       const res = await fetch('/api/bot/book', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          name: name.trim(),
-          email: email.trim() || undefined,
-          phone: phone.trim() || undefined,
-          note: note.trim() || undefined,
-          startsAtTR: slot.slotTR
-        })
+        body: JSON.stringify({ name, email, phone, note, startsAtTR: slot.slotTR })
       });
-      
       const data = await res.json();
+
+      alert(res.ok ? 'Randevu alindi' : `Hata: ${data?.error ?? res.status}`);
+      
       if (res.ok) {
-        alert('Randevu alindi! ID: ' + data.booking.id);
         setName(''); setEmail(''); setPhone(''); setNote('');
         loadNextSlot();
-      } else {
-        alert('Hata: ' + (data.error || 'Bilinmeyen hata'));
+      } else if (res.status === 409) {
+        loadNextSlot(); // slot doluysa yeni slotu getir
       }
     } catch (e) {
       alert('Baglanti hatasi');
@@ -80,7 +74,7 @@ export default function RandevuBot() {
         </div>
       )}
 
-      <form onSubmit={(e) => { e.preventDefault(); bookSlot(); }} className="space-y-4">
+      <form onSubmit={(e) => { e.preventDefault(); bookNow(); }} className="space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1">Ad Soyad *</label>
           <input
