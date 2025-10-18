@@ -9,17 +9,41 @@ const toTR = (d = new Date()) => new Date(d.toLocaleString("en-US", { timeZone: 
 const toUTC = (trDate: Date) => new Date(trDate.getTime() - trDate.getTimezoneOffset() * 60000);
 
 export async function GET() {
-  let slotTR = toTR(); slotTR.setDate(slotTR.getDate() + 1); slotTR.setHours(10,0,0,0);
-  for (let i = 0; i < 16; i++) {
-    const exists = await prisma.booking.findFirst({ where: { startsAt: toUTC(slotTR) } });
-    if (!exists) {
-      return NextResponse.json(
-        { ok: true, slotTR: slotTR.toISOString(), slotUTC: toUTC(slotTR).toISOString() },
-        { headers: { "cache-control": "no-store" } }
-      );
+  try {
+    // Yarın 10:00'dan başlayarak 30 dakikalık slotlar ara
+    let slotTR = toTR();
+    slotTR.setDate(slotTR.getDate() + 1);
+    slotTR.setHours(10, 0, 0, 0);
+
+    // 16 slot kontrol et (8 saat = 16 x 30 dakika)
+    for (let i = 0; i < 16; i++) {
+      const exists = await prisma.booking.findFirst({
+        where: { startsAt: toUTC(slotTR) }
+      });
+      
+      if (!exists) {
+        return NextResponse.json({
+          ok: true,
+          slotTR: slotTR.toISOString(),
+          slotUTC: toUTC(slotTR).toISOString()
+        }, {
+          headers: { "cache-control": "no-store" }
+        });
+      }
+      
+      // Sonraki 30 dakika
+      slotTR = new Date(slotTR.getTime() + 30 * 60 * 1000);
     }
-    slotTR = new Date(slotTR.getTime() + 30 * 60 * 1000);
+
+    return NextResponse.json({
+      ok: false,
+      error: "Bugün için uygun slot yok"
+    }, { status: 409 });
+
+  } catch (e: any) {
+    return NextResponse.json({
+      ok: false,
+      error: e?.message || "Server error"
+    }, { status: 500 });
   }
-  return NextResponse.json({ ok: false, error: "Bugün için uygun slot yok" }, { status: 409 });
 }
-// deploy-touch next-slot

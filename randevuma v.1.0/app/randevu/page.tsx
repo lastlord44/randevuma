@@ -1,57 +1,148 @@
 'use client';
 import { useEffect, useState } from 'react';
 
-export default function Randevu() {
-  const [slotTR, setSlotTR] = useState<string>('');
+export default function RandevuBot() {
+  const [slot, setSlot] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [name, setName] = useState('Müşteri');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [note, setNote] = useState('');
-  const [result, setResult] = useState<any>(null);
 
-  async function loadNext() {
-    setResult(null);
-    const r = await fetch('/api/bot/next-slot', { cache: 'no-store' });
-    const d = await r.json();
-    setSlotTR(r.ok && d?.ok ? d.slotTR : '');
+  useEffect(() => {
+    loadNextSlot();
+  }, []);
+
+  async function loadNextSlot() {
+    try {
+      const res = await fetch('/api/bot/next-slot', { cache: 'no-store' });
+      const data = await res.json();
+      if (data.ok) {
+        setSlot(data);
+      }
+    } catch (e) {
+      console.error('Slot yüklenemedi:', e);
+    }
   }
-  useEffect(() => { loadNext(); }, []);
 
-  async function bookNow() {
-    if (!slotTR) { alert('Uygun saat bulunamadı'); return; }
+  async function bookSlot() {
+    if (!slot || !name.trim()) return;
+    
     setLoading(true);
     try {
-      const r = await fetch('/api/bot/book', {
+      const res = await fetch('/api/bot/book', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ name, email, phone, note, startsAtTR: slotTR })
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim() || undefined,
+          phone: phone.trim() || undefined,
+          note: note.trim() || undefined,
+          startsAtTR: slot.slotTR
+        })
       });
-      const d = await r.json();
-      setResult({ status: r.status, data: d });
-      if (r.ok) { alert('✅ Randevu alındı'); await loadNext(); }
-      else if (r.status === 409) { alert('❌ Slot dolu'); await loadNext(); }
-    } finally { setLoading(false); }
+      
+      const data = await res.json();
+      if (res.ok) {
+        alert('✅ Randevu alındı! ID: ' + data.booking.id);
+        setName(''); setEmail(''); setPhone(''); setNote('');
+        loadNextSlot();
+      } else {
+        alert('❌ Hata: ' + (data.error || 'Bilinmeyen hata'));
+      }
+    } catch (e) {
+      alert('❌ Bağlantı hatası');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
-    <main className="mx-auto max-w-xl p-6 space-y-6">
-      <h1 className="text-2xl font-semibold">Hızlı Randevu</h1>
-      <div className="rounded border p-4 space-y-3">
-        <div>Sonraki uygun saat (TR): <b>{slotTR ? new Date(slotTR).toLocaleString() : '—'}</b></div>
-        <input className="w-full rounded border p-2" placeholder="Ad Soyad" value={name} onChange={e=>setName(e.target.value)} />
-        <input className="w-full rounded border p-2" placeholder="E-posta (ops.)" value={email} onChange={e=>setEmail(e.target.value)} />
-        <input className="w-full rounded border p-2" placeholder="Telefon (ops.)" value={phone} onChange={e=>setPhone(e.target.value)} />
-        <textarea className="w-full rounded border p-2" placeholder="Not (ops.)" value={note} onChange={e=>setNote(e.target.value)} />
-        <div className="flex gap-3">
-          <button onClick={bookNow} disabled={loading || !slotTR} className="rounded bg-black px-4 py-2 text-white disabled:opacity-50">
-            {loading ? 'Alınıyor…' : 'Hemen Al'}
-          </button>
-          <button onClick={loadNext} className="rounded border px-4 py-2">Yenile</button>
+    <main className="mx-auto max-w-2xl p-6 space-y-6">
+      <h1 className="text-2xl font-semibold">🤖 Randevu Botu</h1>
+      <p className="text-gray-600">
+        Hızlı randevu almak için aşağıdaki formu doldurun.
+      </p>
+
+      {slot && (
+        <div className="rounded-lg border p-4 bg-green-50">
+          <h2 className="font-semibold text-green-800">✅ Uygun Slot Bulundu</h2>
+          <p className="text-green-700">
+            {new Date(slot.slotTR).toLocaleString('tr-TR', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
+          </p>
         </div>
-        {result && <pre className="bg-gray-50 rounded p-3 text-xs whitespace-pre-wrap">{JSON.stringify(result, null, 2)}</pre>}
+      )}
+
+      <form onSubmit={(e) => { e.preventDefault(); bookSlot(); }} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">Ad Soyad *</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full rounded-md border p-2"
+            placeholder="Adınız ve soyadınız"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">E-posta</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full rounded-md border p-2"
+            placeholder="ornek@email.com"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">Telefon</label>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="w-full rounded-md border p-2"
+            placeholder="0555 123 45 67"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">Not</label>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            className="w-full rounded-md border p-2"
+            placeholder="Özel istekleriniz..."
+            rows={3}
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading || !slot}
+          className="w-full rounded-lg bg-black px-4 py-2 text-white hover:opacity-90 disabled:opacity-50"
+        >
+          {loading ? 'İşleniyor...' : 'Randevu Al'}
+        </button>
+      </form>
+
+      <div className="text-center">
+        <button
+          onClick={loadNextSlot}
+          className="text-sm text-gray-500 hover:text-gray-700"
+        >
+          🔄 Farklı slot ara
+        </button>
       </div>
     </main>
   );
 }
-// deploy-touch randevu

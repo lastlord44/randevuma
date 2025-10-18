@@ -13,24 +13,48 @@ const trToUTC = (s: string) => {
 
 export async function POST(req: Request) {
   try {
-    const { name, email, phone, note, startsAtTR } = await req.json().catch(()=>({}));
-    if (!name || !startsAtTR) return NextResponse.json({ error: "name & startsAtTR gerekli" }, { status: 400 });
+    const { name, email, phone, note, startsAtTR } = await req.json().catch(() => ({}));
+    
+    if (!name || !startsAtTR) {
+      return NextResponse.json({ error: "name & startsAtTR gerekli" }, { status: 400 });
+    }
 
     const startsUtc = trToUTC(startsAtTR);
-    if (!startsUtc) return NextResponse.json({ error: "geçersiz tarih" }, { status: 400 });
+    if (!startsUtc) {
+      return NextResponse.json({ error: "geçersiz tarih" }, { status: 400 });
+    }
+
+    // Aynı slot'ta çakışma kontrolü
+    const existing = await prisma.booking.findFirst({
+      where: { startsAt: startsUtc }
+    });
+    
+    if (existing) {
+      return NextResponse.json({ error: "Bu slot dolu" }, { status: 409 });
+    }
 
     const created = await prisma.booking.create({
-      data: { name, email, phone, note, startsAt: startsUtc },
-      select: { id: true, name: true, startsAt: true },
+      data: {
+        name,
+        email,
+        phone,
+        note,
+        startsAt: startsUtc
+      },
+      select: { id: true, name: true, startsAt: true }
     });
 
-    return NextResponse.json({ ok: true, booking: created }, { headers: { "cache-control": "no-store" } });
+    return NextResponse.json({
+      ok: true,
+      booking: created
+    }, {
+      headers: { "cache-control": "no-store" }
+    });
+
   } catch (e: any) {
-    const msg = String(e?.message || "");
-    if (msg.includes("Unique") || msg.includes("unique")) {
-      return NextResponse.json({ ok: false, error: "slot dolu" }, { status: 409 });
-    }
-    return NextResponse.json({ ok: false, error: "server" }, { status: 500 });
+    return NextResponse.json({
+      ok: false,
+      error: e?.message || "Server error"
+    }, { status: 500 });
   }
 }
-// deploy-touch book

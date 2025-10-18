@@ -1,47 +1,62 @@
 ﻿import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "../../../../lib/prisma";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+const toTR = (d = new Date()) => new Date(d.toLocaleString("en-US", { timeZone: "Europe/Istanbul" }));
+const toUTC = (trDate: Date) => new Date(trDate.getTime() - trDate.getTimezoneOffset() * 60000);
+
 export async function POST(req: Request) {
   try {
-    const body = await req.json().catch(() => ({}));
-    const { name, startsAt } = body ?? {};
-
+    const { name, startsAt } = await req.json().catch(() => ({}));
+    
     if (!name) {
-      return NextResponse.json({ error: "name zorunludur" }, { status: 400 });
+      return NextResponse.json({ error: "name gerekli" }, { status: 400 });
     }
 
-    // EÄŸer startsAt yoksa, yarÄ±n 10:00 (TR) slotu dene
-    let when: Date;
+    let startsUtc: Date;
+    
     if (startsAt) {
-      when = new Date(startsAt);
-      if (Number.isNaN(when.getTime())) {
-        return NextResponse.json({ error: "startsAt geÃ§ersiz tarih" }, { status: 400 });
+      const parsed = new Date(startsAt);
+      if (Number.isNaN(parsed.getTime())) {
+        return NextResponse.json({ error: "geçersiz tarih" }, { status: 400 });
       }
+      startsUtc = parsed;
     } else {
-      // YarÄ±n 10:00 (TR) slotu
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(10, 0, 0, 0);
-      when = tomorrow;
+      // Otomatik: yarın 10:00
+      let slotTR = toTR();
+      slotTR.setDate(slotTR.getDate() + 1);
+      slotTR.setHours(10, 0, 0, 0);
+      startsUtc = toUTC(slotTR);
+    }
+
+    // Çakışma kontrolü
+    const existing = await prisma.booking.findFirst({
+      where: { startsAt: startsUtc }
+    });
+    
+    if (existing) {
+      return NextResponse.json({ error: "Bu slot dolu" }, { status: 409 });
     }
 
     const created = await prisma.booking.create({
-      data: { 
-        name, 
-        email: null, 
-        phone: null, 
-        note: "Admin panelinden oluÅŸturuldu", 
-        startsAt: when 
+      data: {
+        name,
+        startsAt: startsUtc
       },
-      select: { id: true, name: true, startsAt: true },
+      select: { id: true, name: true, startsAt: true }
     });
 
-    return NextResponse.json({ ok: true, booking: created }, { status: 201 });
+    return NextResponse.json({
+      ok: true,
+      booking: created
+    });
+
   } catch (e: any) {
-    console.error(e);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return NextResponse.json({
+      ok: false,
+      error: e?.message || "Server error"
+    }, { status: 500 });
   }
 }
