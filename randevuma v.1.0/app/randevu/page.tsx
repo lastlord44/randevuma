@@ -29,20 +29,21 @@ export default function RandevuBot() {
     if (!slot?.slotTR) { alert('Uygun saat bulunamadi'); return; }
     setLoading(true);
     try {
-      const res = await fetch('/api/bot/book', {
+      const r = await fetch('/api/bot/book', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ name, email, phone, note, startsAtTR: slot.slotTR })
       });
-      const data = await res.json();
-
-      alert(res.ok ? 'Randevu alindi' : `Hata: ${data?.error ?? res.status}`);
-      
-      if (res.ok) {
+      const data = await r.json();
+      if (r.ok) {
+        alert('Randevu alindi');
         setName(''); setEmail(''); setPhone(''); setNote('');
-        loadNextSlot();
-      } else if (res.status === 409) {
-        loadNextSlot(); // slot doluysa yeni slotu getir
+        loadNextSlot(); // yeni uygun slotu getir
+      } else {
+        alert(`Hata: ${data?.error ?? r.status}`);
+        if (r.status === 409) {
+          loadNextSlot(); // slot doluysa siradaki slotu goster
+        }
       }
     } catch (e) {
       alert('Baglanti hatasi');
