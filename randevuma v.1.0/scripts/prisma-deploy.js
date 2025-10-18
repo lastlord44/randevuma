@@ -1,25 +1,30 @@
-const { execSync } = require('child_process');
+// scripts/prisma-deploy.js
+const { execSync } = require("child_process");
 
-const isProduction = process.env.VERCEL_ENV === 'production';
-const isPreview = process.env.VERCEL_ENV === 'preview';
+function run(cmd) {
+  console.log(`[prisma-deploy] ${cmd}`);
+  execSync(cmd, { stdio: "inherit" });
+}
 
-console.log(`[prisma-deploy] Environment: ${process.env.VERCEL_ENV || 'development'}`);
+const env = process.env.VERCEL_ENV || process.env.NODE_ENV || "development";
+const url = process.env.DATABASE_URL;
+
+console.log(`[prisma-deploy] env=${env}`);
+if (!url) {
+  console.error("[prisma-deploy] DATABASE_URL yok! Build'i durduruyorum.");
+  process.exit(1);
+}
 
 try {
-  if (isProduction) {
-    console.log('[prisma-deploy] Running: prisma migrate deploy (production)');
-    execSync('npx prisma migrate deploy', { stdio: 'inherit' });
-  } else if (isPreview) {
-    console.log('[prisma-deploy] Running: prisma db push --accept-data-loss (preview)');
-    execSync('npx prisma db push --accept-data-loss', { stdio: 'inherit' });
+  run("npx prisma generate");
+  if (env === "production") {
+    run("npx prisma migrate deploy");
   } else {
-    console.log('[prisma-deploy] Running: prisma generate (development)');
-    execSync('npx prisma generate', { stdio: 'inherit' });
+    run("npx prisma db push --accept-data-loss");
   }
-  
-  console.log('[prisma-deploy] ✅ Prisma setup completed successfully');
-} catch (error) {
-  console.error('[prisma-deploy] ❌ Prisma setup failed:', error.message);
+  console.log("[prisma-deploy] OK");
+} catch (e) {
+  console.error("[prisma-deploy] HATA:", e?.message || e);
   process.exit(1);
 }
 
