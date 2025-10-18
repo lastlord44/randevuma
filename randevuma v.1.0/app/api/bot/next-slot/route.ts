@@ -22,3 +22,4 @@ export async function GET() {
   }
   return NextResponse.json({ ok: false, error: "Bugün için uygun slot yok" }, { status: 409 });
 }
+// deploy-touch next-slot

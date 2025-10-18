@@ -10,3 +10,4 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/randevu`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
   ];
 }
+// deploy-touch sitemap
