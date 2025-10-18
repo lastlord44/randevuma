@@ -1,11 +1,12 @@
 import type { MetadataRoute } from "next";
-import { baseUrl } from "@/lib/baseUrl";
+const base =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date().toISOString();
-
   return [
-    { url: `${baseUrl}/`, lastModified: now, changeFrequency: "daily", priority: 1 },
-    { url: `${baseUrl}/b/demo`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${base}/`, lastModified: now, changeFrequency: "daily", priority: 1 },
+    { url: `${base}/randevu`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
   ];
 }

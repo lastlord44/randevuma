@@ -137,4 +137,6 @@ model Booking {
   startsAt  DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([startsAt])
 }

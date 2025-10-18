@@ -1,31 +1,24 @@
 ﻿import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-function tr(d = new Date()) {
-  return new Date(d.toLocaleString("en-US", { timeZone: "Europe/Istanbul" }));
-}
-
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+const tr = (d = new Date()) => new Date(d.toLocaleString("en-US", { timeZone: "Europe/Istanbul" }));
 
 export async function GET() {
   try {
     const last = await prisma.booking.findFirst({
       orderBy: { createdAt: "desc" },
-      select: { id:true, startsAt:true, createdAt:true, name:true }
+      select: { id:true, name:true, startsAt:true, createdAt:true }
     });
     return NextResponse.json({
       ok: true,
       env: process.env.VERCEL_ENV || process.env.NODE_ENV,
-      cron: process.env.VERCEL ? "Vercel Cron (varsa vercel.json)" : "â€”",
       lastBooking: last ? {
-        id: last.id,
-        name: last.name,
-        startsAt: last.startsAt,
-        createdAt: last.createdAt,
-        startsAtTR: tr(last.startsAt).toISOString()
-      } : null,
-      lastResult: "OK"
+        ...last,
+        startsAtTR: tr(last.startsAt).toISOString(),
+      } : null
     });
   } catch (e:any) {
     return NextResponse.json({ ok:false, error:e?.message||"server" }, { status:500 });
