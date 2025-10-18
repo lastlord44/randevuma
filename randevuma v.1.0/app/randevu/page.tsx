@@ -21,7 +21,7 @@ export default function RandevuBot() {
         setSlot(data);
       }
     } catch (e) {
-      console.error('Slot yüklenemedi:', e);
+      console.error('Slot yuklenemedi:', e);
     }
   }
 
@@ -61,7 +61,7 @@ export default function RandevuBot() {
     <main className="mx-auto max-w-2xl p-6 space-y-6">
       <h1 className="text-2xl font-semibold">Randevu Botu</h1>
       <p className="text-gray-600">
-        Hızlı randevu almak için aşağıdaki formu doldurun.
+        Hizli randevu almak icin asagidaki formu doldurun.
       </p>
 
       {slot && (
@@ -88,7 +88,7 @@ export default function RandevuBot() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full rounded-md border p-2"
-            placeholder="Adınız ve soyadınız"
+            placeholder="Adiniz ve soyadiniz"
             required
           />
         </div>
@@ -121,7 +121,7 @@ export default function RandevuBot() {
             value={note}
             onChange={(e) => setNote(e.target.value)}
             className="w-full rounded-md border p-2"
-            placeholder="Özel istekleriniz..."
+            placeholder="Ozel istekleriniz..."
             rows={3}
           />
         </div>
