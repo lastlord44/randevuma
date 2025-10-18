@@ -34,10 +34,10 @@ export default function Randevu() {
 
       if (r.ok) {
         alert('Randevu alindi');
-        await loadNext(); // sonraki uygun slotu guncelle
+        await loadNext();
       } else {
         alert(`Hata: ${data?.error ?? r.status}`);
-        if (r.status === 409) await loadNext(); // slot doluysa siradaki slota gec
+        if (r.status === 409) await loadNext();
       }
 
       setResult({ status: r.status, data });
@@ -54,16 +54,19 @@ export default function Randevu() {
         <input className="w-full rounded border p-2" placeholder="Ad Soyad" value={name} onChange={e=>setName(e.target.value)} />
         <input className="w-full rounded border p-2" placeholder="E-posta (ops.)" value={email} onChange={e=>setEmail(e.target.value)} />
         <input className="w-full rounded border p-2" placeholder="Telefon (ops.)" value={phone} onChange={e=>setPhone(e.target.value)} />
-        <textarea className="w-full rounded border p-2" placeholder="Not (ops.)" value={note} onChange={e=>setNote(e.target.value)} rows={2} />
-        <button 
-          onClick={bookNow} 
-          disabled={loading || !slotTR}
-          className="w-full rounded bg-black px-4 py-2 text-white hover:opacity-90 disabled:opacity-50"
-        >
-          {loading ? 'Isleniyor...' : 'Randevu Al'}
-        </button>
+        <textarea className="w-full rounded border p-2" placeholder="Not (ops.)" value={note} onChange={e=>setNote(e.target.value)} />
+        <div className="flex gap-3">
+          <button onClick={bookNow} disabled={loading || !slotTR} className="rounded bg-black px-4 py-2 text-white disabled:opacity-50">
+            {loading ? 'Aliniyor...' : 'Hemen Al'}
+          </button>
+          <button onClick={loadNext} className="rounded border px-4 py-2">Yenile</button>
+        </div>
+        {result && (
+          <pre className="bg-gray-50 rounded p-3 text-xs whitespace-pre-wrap">
+            {JSON.stringify(result, null, 2)}
+          </pre>
+        )}
       </div>
-      {result && <div className="text-sm text-gray-600">Sonuc: {JSON.stringify(result)}</div>}
     </main>
   );
 }
