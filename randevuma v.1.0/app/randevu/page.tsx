@@ -44,14 +44,14 @@ export default function RandevuBot() {
       
       const data = await res.json();
       if (res.ok) {
-        alert('✅ Randevu alındı! ID: ' + data.booking.id);
+        alert('Randevu alindi! ID: ' + data.booking.id);
         setName(''); setEmail(''); setPhone(''); setNote('');
         loadNextSlot();
       } else {
-        alert('❌ Hata: ' + (data.error || 'Bilinmeyen hata'));
+        alert('Hata: ' + (data.error || 'Bilinmeyen hata'));
       }
     } catch (e) {
-      alert('❌ Bağlantı hatası');
+      alert('Baglanti hatasi');
     } finally {
       setLoading(false);
     }
@@ -59,14 +59,14 @@ export default function RandevuBot() {
 
   return (
     <main className="mx-auto max-w-2xl p-6 space-y-6">
-      <h1 className="text-2xl font-semibold">🤖 Randevu Botu</h1>
+      <h1 className="text-2xl font-semibold">Randevu Botu</h1>
       <p className="text-gray-600">
         Hızlı randevu almak için aşağıdaki formu doldurun.
       </p>
 
       {slot && (
         <div className="rounded-lg border p-4 bg-green-50">
-          <h2 className="font-semibold text-green-800">✅ Uygun Slot Bulundu</h2>
+          <h2 className="font-semibold text-green-800">Uygun Slot Bulundu</h2>
           <p className="text-green-700">
             {new Date(slot.slotTR).toLocaleString('tr-TR', {
               weekday: 'long',
@@ -131,7 +131,7 @@ export default function RandevuBot() {
           disabled={loading || !slot}
           className="w-full rounded-lg bg-black px-4 py-2 text-white hover:opacity-90 disabled:opacity-50"
         >
-          {loading ? 'İşleniyor...' : 'Randevu Al'}
+          {loading ? 'Isleniyor...' : 'Randevu Al'}
         </button>
       </form>
 
@@ -140,7 +140,7 @@ export default function RandevuBot() {
           onClick={loadNextSlot}
           className="text-sm text-gray-500 hover:text-gray-700"
         >
-          🔄 Farklı slot ara
+          Farkli slot ara
         </button>
       </div>
     </main>
