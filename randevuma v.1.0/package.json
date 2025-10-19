@@ -5,9 +5,7 @@
   "scripts": {
     "postinstall": "prisma generate",
     "type-check": "tsc --noEmit",
-    "build": "next build --turbopack",
-    "predeploy": "node scripts/prisma-deploy.js",
-    "vercel-build": "npm run predeploy && npm run build",
+    "build": "next build",
     "dev": "next dev"
   },
   "dependencies": {
