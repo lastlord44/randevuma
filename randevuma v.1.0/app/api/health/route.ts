@@ -1,7 +1,15 @@
-import { NextResponse } from 'next/server';
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
-export const runtime = "edge";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
-  return NextResponse.json({ ok: true, ts: Date.now() });
+  try {
+    // DB bağlantısı test: tablo yoksa yine de client init olur
+    await prisma.$queryRawUnsafe('SELECT 1');
+    return NextResponse.json({ ok: true });
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, error: String(e?.message || e) }, { status: 500 });
+  }
 }
