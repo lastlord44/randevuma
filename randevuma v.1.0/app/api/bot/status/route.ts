@@ -1,12 +1,13 @@
 ﻿import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 
+export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 function tr(d = new Date()) {
   return new Date(d.toLocaleString("en-US", { timeZone: "Europe/Istanbul" }));
 }
-
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 export async function GET() {
   try {
