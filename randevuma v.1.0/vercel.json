@@ -1,4 +1,4 @@
 {
   "framework": "nextjs",
-  "buildCommand": "bash -lc \"set -e; echo '=== PREFLIGHT ==='; echo '--- app/randevu/page.tsx (first 60 lines) ---'; sed -n '1,60p' app/randevu/page.tsx || { echo 'file missing'; }; echo '--- GREP bad utf8 ---'; if grep -E -n 'âœ|alÄ±ndÄ±|\\x9d' app/randevu/page.tsx; then echo '❌ BAD BYTES FOUND'; exit 2; else echo 'OK'; fi; echo '=== BUILD ==='; next build\""
+  "buildCommand": "next build"
 }
