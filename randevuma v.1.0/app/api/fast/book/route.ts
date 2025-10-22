@@ -25,9 +25,7 @@ export async function POST(req: NextRequest) {
 
     const startAt = body.startAtISO;
     const { startWithBefore, end } = withBuffers(startAt, {
-      durationMin: service.duration,
-      bufferBefore: service.bufferBefore,
-      bufferAfter: service.bufferAfter,
+      durationMin: service.durationMin, bufferBefore: service.bufferBefore, bufferAfter: service.bufferAfter,
     });
 
     const appt = await prisma.$transaction(async (tx) => {
@@ -39,11 +37,14 @@ export async function POST(req: NextRequest) {
       const endM = end.getHours() * 60 + end.getMinutes();
       if (mins < wh.openMin || endM > wh.closeMin) throw new Error("Outside working hours");
 
+      const timeoff = await tx.staffTimeOff.findFirst({
+        where: { staffId: body.staffId, NOT: [{ endAt: { lte: startWithBefore } }, { startAt: { gte: end } }] },
+      });
+      if (timeoff) throw new Error("Staff unavailable");
+
       const conflict = await tx.appointment.findFirst({
         where: {
-          businessId: business.id,
-          staffId: body.staffId,
-          status: { in: ["booked", "done"] },
+          businessId: business.id, staffId: body.staffId, status: { in: ["booked", "done"] },
           NOT: [{ endAt: { lte: startWithBefore } }, { startAt: { gte: end } }],
         },
       });
@@ -51,15 +52,9 @@ export async function POST(req: NextRequest) {
 
       return tx.appointment.create({
         data: {
-          businessId: business.id,
-          staffId: body.staffId,
-          serviceId: body.serviceId,
-          customerName: body.customerName,
-          customerPhone: body.customerTel,
-          startAt,
-          endAt: end,
-          status: "booked",
-          notes: body.note,
+          businessId: business.id, staffId: body.staffId, serviceId: body.serviceId,
+          customerName: body.customerName, customerTel: body.customerTel,
+          startAt, endAt: end, status: "booked", note: body.note,
         },
       });
     });
