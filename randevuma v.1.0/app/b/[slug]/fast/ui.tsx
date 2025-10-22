@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { HydrationSanitizer } from "./sanitizer";
@@ -16,23 +16,26 @@ export default function FastClient({ businessSlug, services, staff }:{
   const [slots, setSlots] = useState<{startISO:string; staffId:string; label:string}[]>([]);
   const [modal, setModal] = useState(false);
   const [pending, setPending] = useState<{startISO:string; staffId:string}|null>(null);
-  const [name, setName] = useState(""); const [tel, setTel] = useState("");
+  const [name, setName] = useState(""); 
+  const [tel, setTel] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
     if (!serviceId) return;
     const qs = new URLSearchParams({ businessSlug, serviceId, date: dateStr });
     if (staffId !== "auto") qs.append("staffId", staffId);
     try {
       const res = await fetch(`/api/fast/next-slots?${qs.toString()}`, { cache: "no-store" });
       const j = await res.json();
-      console.log("Slots:", j);
+      console.log("Slots loaded:", j);
       setSlots(j.slots || []);
     } catch (e) {
       console.error("Load error:", e);
       setSlots([]);
     }
-  }
-  useEffect(()=>{ load(); }, [serviceId, staffId, dateStr]);
+  }, [businessSlug, serviceId, staffId, dateStr]);
+
+  useEffect(() => { load(); }, [load]);
 
   async function onBook(e: React.FormEvent) {
     e.preventDefault();
@@ -40,22 +43,38 @@ export default function FastClient({ businessSlug, services, staff }:{
       alert("Lütfen tüm alanları doldurun");
       return;
     }
+    setSubmitting(true);
     try {
+      const cleanTel = tel.replace(/\D/g, '');
       const res = await fetch("/api/fast/book", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           businessSlug, serviceId,
           staffId: pending.staffId, startAtISO: pending.startISO,
-          customerName: name.trim(), customerTel: tel.trim(),
+          customerName: name.trim(), customerTel: cleanTel,
         })
       });
       const j = await res.json();
       console.log("Book result:", j);
-      if (j.ok) { alert("Randevunuz alındı ✅"); setModal(false); setName(""); setTel(""); load(); }
-      else { alert("Üzgünüz: " + (j.error || "Hata")); }
+      if (j.ok) { 
+        alert("Randevunuz alındı ✅"); 
+        setModal(false); 
+        setName(""); 
+        setTel(""); 
+        load(); 
+      } else { 
+        alert("Üzgünüz: " + (j.error || "Hata")); 
+      }
     } catch (e: any) {
       alert("Bağlantı hatası: " + e.message);
+    } finally {
+      setSubmitting(false);
     }
+  }
+
+  function handleTelChange(value: string) {
+    const digits = value.replace(/\D/g, '').slice(0, 11);
+    setTel(digits);
   }
 
   return (
@@ -90,11 +109,13 @@ export default function FastClient({ businessSlug, services, staff }:{
           <div className="text-sm text-gray-600">
             {format(new Date(pending.startISO), "d MMM EEE HH:mm", { locale: tr })}
           </div>
-          <input className="border rounded px-2 h-9 w-full" placeholder="Adınız" value={name} onChange={e=>setName(e.target.value)} required/>
-          <input className="border rounded px-2 h-9 w-full" placeholder="5xx xxx xx xx" value={tel} onChange={e=>setTel(e.target.value)} required/>
+          <input className="border rounded px-2 h-9 w-full" placeholder="Adınız (en az 2 harf)" value={name} onChange={e=>setName(e.target.value)} required minLength={2} disabled={submitting}/>
+          <input className="border rounded px-2 h-9 w-full" placeholder="5xx xxx xx xx (10-11 rakam)" value={tel} onChange={e=>handleTelChange(e.target.value)} required minLength={10} maxLength={11} inputMode="numeric" pattern="[0-9]{10,11}" disabled={submitting}/>
           <div className="flex gap-2">
-            <button type="submit" className="rounded bg-black text-white px-3 h-9">Onayla</button>
-            <button type="button" className="rounded border px-3 h-9" onClick={()=>setModal(false)}>İptal</button>
+            <button type="submit" className="rounded bg-black text-white px-3 h-9 disabled:opacity-50 disabled:cursor-not-allowed" disabled={submitting}>
+              {submitting ? "Kaydediliyor..." : "Onayla"}
+            </button>
+            <button type="button" className="rounded border px-3 h-9" onClick={()=>setModal(false)} disabled={submitting}>İptal</button>
           </div>
         </form>
       )}
