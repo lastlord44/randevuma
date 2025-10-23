@@ -1,168 +1,187 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
-import { HydrationSanitizer } from "./sanitizer";
 
 type Service = { id: string; name: string; durationMin: number; bufferBefore: number; bufferAfter: number };
 type Staff = { id: string; name: string };
 
-export default function FastClient({ businessSlug, services, staff }:{
-  businessSlug: string; services: Service[]; staff: Staff[];
-}) {
+type Slot = { startISO: string; staffId: string; label: string };
+
+export default function FastClient({
+  businessSlug, services, staff
+}: { businessSlug: string; services: Service[]; staff: Staff[] }) {
   const [serviceId, setServiceId] = useState<string>(services[0]?.id ?? "");
   const [staffId, setStaffId] = useState<string>("auto");
   const [dateStr, setDateStr] = useState<string>(new Date().toISOString().slice(0,10));
-  const [slots, setSlots] = useState<{startISO:string; staffId:string; label:string}[]>([]);
-  const [showAll, setShowAll] = useState(false);
-  const [allSlots, setAllSlots] = useState<{startISO:string; staffId:string; label:string}[]>([]);
+
+  const [fastSlots, setFastSlots] = useState<Slot[]>([]);
+  const [allSlots, setAllSlots] = useState<Slot[]>([]);
+  const [showAll, setShowAll] = useState<boolean>(true);
+
   const [modal, setModal] = useState(false);
   const [pending, setPending] = useState<{startISO:string; staffId:string}|null>(null);
-  const [name, setName] = useState(""); 
-  const [tel, setTel] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [name, setName] = useState(""); const [tel, setTel] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const load = useCallback(async () => {
+  async function load() {
     if (!serviceId) return;
-    const qs = new URLSearchParams({ businessSlug, serviceId, date: dateStr });
-    if (staffId !== "auto") qs.append("staffId", staffId);
-    try {
-      // Quick 3 slots
-      const res = await fetch(`/api/fast/next-slots?${qs.toString()}`, { cache: "no-store" });
-      const j = await res.json();
-      console.log("Quick slots loaded:", j);
-      setSlots(j.slots || []);
-      
-      // All slots if enabled
-      if (showAll) {
-        const qsAll = new URLSearchParams(qs);
-        qsAll.set("limit", "all");
-        qsAll.set("step", "15");
-        const resAll = await fetch(`/api/fast/next-slots?${qsAll.toString()}`, { cache: "no-store" });
-        const jAll = await resAll.json();
-        console.log("All slots loaded:", jAll);
-        setAllSlots(jAll.slots || []);
-      } else {
-        setAllSlots([]);
-      }
-    } catch (e) {
-      console.error("Load error:", e);
-      setSlots([]);
+    const base = new URLSearchParams({ businessSlug, serviceId, date: dateStr });
+    if (staffId !== "auto") base.set("staffId", staffId);
+
+    // 3 hızlı slot
+    const r1 = await fetch(`/api/fast/next-slots?${base.toString()}`, { cache: "no-store" });
+    const j1 = await r1.json(); setFastSlots(j1.slots || []);
+
+    // tüm uygun saatler
+    if (showAll) {
+      const q2 = new URLSearchParams(base); q2.set("limit","all"); q2.set("step","15");
+      const r2 = await fetch(`/api/fast/next-slots?${q2.toString()}`, { cache: "no-store" });
+      const j2 = await r2.json(); setAllSlots(j2.slots || []);
+    } else {
       setAllSlots([]);
     }
-  }, [businessSlug, serviceId, staffId, dateStr, showAll]);
+  }
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [serviceId, staffId, dateStr, showAll]);
 
-  useEffect(() => { load(); }, [load]);
+  // grid'i personel başına grupla (ön izlemeyle aynı)
+  const staffMap = useMemo(() => {
+    const map: Record<string, Slot[]> = {};
+    for (const s of allSlots) (map[s.staffId] ||= []).push(s);
+    return map;
+  }, [allSlots]);
 
   async function onBook(e: React.FormEvent) {
     e.preventDefault();
-    if (!pending || !serviceId || !name.trim() || !tel.trim()) {
-      alert("Lütfen tüm alanları doldurun");
-      return;
+    if (!pending || !serviceId) return;
+    setLoading(true);
+    const res = await fetch("/api/fast/book", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        businessSlug, serviceId,
+        staffId: pending.staffId, startAtISO: pending.startISO,
+        customerName: name, customerTel: tel,
+      })
+    });
+    const j = await res.json();
+    setLoading(false);
+    if (j.ok) {
+      alert("Randevunuz alındı ✅");
+      setModal(false); setName(""); setTel("");
+      load();
+    } else {
+      alert("Üzgünüz: " + (j.error || "Hata"));
+      load();
     }
-    setSubmitting(true);
-    try {
-      const cleanTel = tel.replace(/\D/g, '');
-      const res = await fetch("/api/fast/book", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          businessSlug, serviceId,
-          staffId: pending.staffId, startAtISO: pending.startISO,
-          customerName: name.trim(), customerTel: cleanTel,
-        })
-      });
-      const j = await res.json();
-      console.log("Book result:", j);
-      if (j.ok) { 
-        alert("Randevunuz alındı ✅"); 
-        setModal(false); 
-        setName(""); 
-        setTel(""); 
-        load(); 
-      } else { 
-        alert("Üzgünüz: " + (j.error || "Hata")); 
-      }
-    } catch (e: any) {
-      alert("Bağlantı hatası: " + e.message);
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  function handleTelChange(value: string) {
-    const digits = value.replace(/\D/g, '').slice(0, 11);
-    setTel(digits);
   }
 
   return (
-    <>
-      <HydrationSanitizer />
-      <div className="max-w-4xl mx-auto p-4 space-y-4">
-        <h1 className="text-xl font-semibold">Hızlı Randevu</h1>
-
-      <div className="flex gap-2 flex-wrap">
-        <select value={serviceId} onChange={(e)=>setServiceId(e.target.value)} className="border rounded px-2 h-9">
-          {services.map(s => <option key={s.id} value={s.id}>{s.name} • {s.durationMin} dk</option>)}
-        </select>
-        <select value={staffId} onChange={(e)=>setStaffId(e.target.value)} className="border rounded px-2 h-9">
-          <option value="auto">Otomatik</option>
-          {staff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
-        <input type="date" value={dateStr} onChange={(e)=>setDateStr(e.target.value)} className="border rounded px-2 h-9"/>
-      </div>
-
-      <div className="space-y-3">
-        <div className="text-sm font-medium">Hızlı 3 Saat</div>
-        <div className="grid sm:grid-cols-3 gap-2">
-          {slots.length === 0 && <div className="text-sm text-gray-500">Uygun hızlı slot yok.</div>}
-          {slots.map(s => (
-            <button key={s.startISO+s.staffId} className="rounded border px-4 py-3 text-left hover:shadow-sm"
-              onClick={()=>{ setPending(s); setModal(true); }}>
-              <div className="text-lg font-semibold">{s.label}</div>
-            </button>
-          ))}
+    <div className="min-h-screen bg-gradient-to-b from-white to-slate-50 p-4 md:p-8">
+      <div className="mx-auto max-w-5xl space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Hızlı Randevu</h1>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={showAll} onChange={(e)=>setShowAll(e.target.checked)} />
+            Tüm saatleri göster
+          </label>
         </div>
 
-        <label className="flex items-center gap-2 text-sm cursor-pointer">
-          <input type="checkbox" checked={showAll} 
-            onChange={(e)=>setShowAll(e.target.checked)} 
-            className="w-4 h-4" />
-          Tüm uygun saatleri göster
-        </label>
+        {/* Seçiciler */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="rounded-xl border p-3">
+            <div className="text-sm mb-1">Hizmet</div>
+            <select value={serviceId} onChange={(e)=>setServiceId(e.target.value)} className="w-full border rounded-md h-9 px-2">
+              {services.map(s => <option key={s.id} value={s.id}>{s.name} • {s.durationMin} dk</option>)}
+            </select>
+          </div>
+          <div className="rounded-xl border p-3">
+            <div className="text-sm mb-1">Personel</div>
+            <select value={staffId} onChange={(e)=>setStaffId(e.target.value)} className="w-full border rounded-md h-9 px-2">
+              <option value="auto">Otomatik (en uygun)</option>
+              {staff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </div>
+          <div className="rounded-xl border p-3">
+            <div className="text-sm mb-1">Tarih</div>
+            <input className="w-full border rounded-md h-9 px-2" type="date" value={dateStr} onChange={(e)=>setDateStr(e.target.value)} />
+          </div>
+        </div>
 
+        {/* 3 Hızlı Slot */}
+        <div className="rounded-2xl border p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="text-base font-medium">3 Hızlı Slot</div>
+            <div className="text-xs text-gray-500">En yakın uygun</div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {fastSlots.length === 0 && <div className="text-sm text-gray-500">Uygun hızlı slot yok.</div>}
+            {fastSlots.map(s => (
+              <button
+                key={s.startISO+s.staffId}
+                className="w-full rounded-2xl border px-4 py-3 text-left hover:shadow-sm"
+                onClick={()=>{ setPending(s); setModal(true); }}
+              >
+                <div className="text-lg font-semibold">{s.label}</div>
+                <div className="text-xs text-gray-500">{staff.find(x=>x.id===s.staffId)?.name}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tüm Saatler Grid — personel sütunlarıyla */}
         {showAll && (
-          <div className="rounded-2xl border p-4 bg-gray-50">
-            <div className="mb-3 text-sm font-medium text-gray-700">Tüm Uygun Saatler</div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
-              {allSlots.map(s => (
-                <button key={s.startISO+s.staffId}
-                  className="rounded-lg border bg-white px-3 py-2 text-sm hover:shadow-sm hover:border-blue-500 transition-all"
-                  onClick={()=>{ setPending(s); setModal(true); }}>
-                  {s.label}
-                </button>
+          <div className="rounded-2xl border p-3">
+            <div className="mb-2 text-base font-medium">Tüm Saatler</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {(staffId === "auto" ? staff : staff.filter(s=>s.id===staffId)).map((p) => (
+                <div key={p.id} className="rounded-2xl border p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <div className="font-medium">{p.name}</div>
+                    <div className="text-xs text-gray-500">{services.find(s=>s.id===serviceId)?.durationMin} dk</div>
+                  </div>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                    {(staffMap[p.id] ?? []).map((s) => (
+                      <button
+                        key={s.startISO+s.staffId}
+                        className="rounded-xl px-2 py-2 text-sm border hover:shadow-sm"
+                        onClick={()=>{ setPending(s); setModal(true); }}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                    {(staffMap[p.id] ?? []).length === 0 && (
+                      <div className="text-sm text-gray-500">Uygun saat yok.</div>
+                    )}
+                  </div>
+                </div>
               ))}
-              {allSlots.length === 0 && <div className="col-span-full text-sm text-gray-500">Bugün uygun saat yok.</div>}
             </div>
           </div>
         )}
-      </div>
 
-      {modal && pending && (
-        <form onSubmit={onBook} className="border rounded p-3 space-y-2 max-w-md">
-          <div className="text-sm text-gray-600">
-            {format(new Date(pending.startISO), "d MMM EEE HH:mm", { locale: tr })}
-          </div>
-          <input className="border rounded px-2 h-9 w-full" placeholder="Adınız (en az 2 harf)" value={name} onChange={e=>setName(e.target.value)} required minLength={2} disabled={submitting}/>
-          <input className="border rounded px-2 h-9 w-full" placeholder="5xx xxx xx xx (10-11 rakam)" value={tel} onChange={e=>handleTelChange(e.target.value)} required minLength={10} maxLength={11} inputMode="numeric" pattern="[0-9]{10,11}" disabled={submitting}/>
-          <div className="flex gap-2">
-            <button type="submit" className="rounded bg-black text-white px-3 h-9 disabled:opacity-50 disabled:cursor-not-allowed" disabled={submitting}>
-              {submitting ? "Kaydediliyor..." : "Onayla"}
-            </button>
-            <button type="button" className="rounded border px-3 h-9" onClick={()=>setModal(false)} disabled={submitting}>İptal</button>
-          </div>
-        </form>
-      )}
+        {/* Onay formu */}
+        {modal && pending && (
+          <form onSubmit={onBook} className="max-w-md rounded-2xl border p-3 space-y-2">
+            <div className="text-sm text-gray-600">
+              {format(new Date(pending.startISO), "d MMM EEE HH:mm", { locale: tr })} • {staff.find(x=>x.id===pending.staffId)?.name}
+            </div>
+            <input
+              className="border rounded px-2 h-9 w-full" placeholder="Adınız (min 2 karakter)"
+              value={name} onChange={e=>setName(e.target.value)} minLength={2} required
+            />
+            <input
+              className="border rounded px-2 h-9 w-full" placeholder="Telefon (10+ rakam)"
+              value={tel} onChange={e=>setTel(e.target.value.replace(/\D/g,''))} inputMode="numeric" pattern="\d{10,}" required
+            />
+            <div className="flex gap-2">
+              <button type="submit" disabled={loading} className="rounded bg-black text-white px-3 h-9">
+                {loading ? "Kaydediliyor..." : "Onayla"}
+              </button>
+              <button type="button" className="rounded border px-3 h-9" onClick={()=>setModal(false)}>İptal</button>
+            </div>
+          </form>
+        )}
+      </div>
     </div>
-    </>
   );
 }

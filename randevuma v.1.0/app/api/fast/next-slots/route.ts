@@ -8,9 +8,9 @@ const Q = z.object({
   businessSlug: z.string(),
   serviceId: z.string(),
   staffId: z.string().optional(),
-  date: z.string().optional(), // YYYY-MM-DD
-  limit: z.string().optional(), // "3" (default) | "all" | number
-  step: z.coerce.number().optional(), // minutes, default 15
+  date: z.string().optional(),        // YYYY-MM-DD
+  limit: z.string().optional(),       // "3" (default) | "all" | "60"
+  step: z.coerce.number().optional(), // dk (default 15)
 });
 
 export async function GET(req: NextRequest) {
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     const step = q.step ?? 15;
     const wantAll = (q.limit?.toLowerCase() === "all");
     const wanted = wantAll ? Number.MAX_SAFE_INTEGER : Number(q.limit ?? 3);
-    
+
     const business = await prisma.business.findUnique({ where: { slug: q.businessSlug } });
     if (!business) return NextResponse.json({ error: "Business not found" }, { status: 404 });
 
@@ -67,10 +67,10 @@ export async function GET(req: NextRequest) {
             staffId: s.id,
             label: t.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", hour12: false }),
           });
-          if (out.length >= wanted) break;
         }
+        if (!wantAll && out.length >= wanted) break;
       }
-      if (out.length >= wanted) break;
+      if (!wantAll && out.length >= wanted) break;
     }
 
     return NextResponse.json({ slots: out });
