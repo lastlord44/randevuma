@@ -183,12 +183,12 @@ export default function FastClient({
             <div className="text-sm text-gray-600">
               {format(new Date(pending.startISO), "d MMM EEE HH:mm", { locale: tr })} • {staff.find(x=>x.id===pending.staffId)?.name}
             </div>
-            {/* Honeypot: bot doldurursa reddedilecek */}
+            {/* Honeypot: bot doldurursa reddedilecek - TAMAMİYLE GİZLİ */}
             <input
               name="_trap"
               value={trap}
               onChange={(e)=>setTrap(e.target.value)}
-              className="hidden"
+              style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px' }}
               tabIndex={-1}
               aria-hidden="true"
               autoComplete="off"

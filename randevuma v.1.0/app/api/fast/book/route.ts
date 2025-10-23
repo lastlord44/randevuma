@@ -16,9 +16,9 @@ const Body = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    // --- 0) HONEYPOT (botlar için)
+    // --- 0) HONEYPOT (botlar için - sadece doluysa reject et)
     const raw = await req.json();
-    if (raw?._trap) {
+    if (raw?._trap && raw._trap.trim().length > 0) {
       return NextResponse.json({ ok: false, error: "Bad request" }, { status: 400 });
     }
 
