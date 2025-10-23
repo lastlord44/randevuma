@@ -7,7 +7,7 @@ const BUCKET = new Map<string, { count: number; ts: number }>();
 
 export function middleware(req: NextRequest) {
   if (!req.nextUrl.pathname.startsWith("/api/fast/")) return NextResponse.next();
-  const ip = req.ip ?? req.headers.get("x-forwarded-for") ?? "anon";
+  const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "anon";
   const now = Date.now();
   const b = BUCKET.get(ip) ?? { count: 0, ts: now };
   if (now - b.ts > WINDOW_MS) { b.count = 0; b.ts = now; }
