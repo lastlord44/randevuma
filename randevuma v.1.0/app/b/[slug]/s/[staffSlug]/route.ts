@@ -19,6 +19,8 @@ export async function GET(req: Request, { params }: { params: { slug: string; st
   const inParams = new URL(req.url).searchParams;
   for (const [k, v] of inParams.entries()) base.searchParams.set(k, v);
 
-  return NextResponse.redirect(base);
+  return NextResponse.redirect(base, {
+    headers: { "Cache-Control": "public, max-age=3600, s-maxage=3600" }
+  });
 }
 
