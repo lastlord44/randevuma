@@ -69,6 +69,7 @@ model Service {
 model Staff {
   id        String   @id @default(cuid())
   name      String
+  slug      String
   email     String?
   phone     String?
   title     String?
@@ -83,6 +84,7 @@ model Staff {
   skills       StaffSkill[]
   timeOffs     StaffTimeOff[]
 
+  @@unique([businessId, slug])
   @@index([businessId])
 }
 

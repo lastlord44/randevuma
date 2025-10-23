@@ -112,6 +112,7 @@ async function main() {
       create: {
         id: 'staff-1',
         name: 'Ahmet Yılmaz',
+        slug: 'ahmet',
         email: 'ahmet@demo.com',
         phone: '+90 555 111 2233',
         title: 'Berber',
@@ -125,6 +126,7 @@ async function main() {
       create: {
         id: 'staff-2',
         name: 'Mehmet Kaya',
+        slug: 'mehmet',
         email: 'mehmet@demo.com',
         phone: '+90 555 444 5566',
         title: 'Kuaför',

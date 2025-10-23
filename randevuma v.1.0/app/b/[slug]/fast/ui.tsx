@@ -10,10 +10,16 @@ type Staff = { id: string; name: string };
 type Slot = { startISO: string; staffId: string; label: string };
 
 export default function FastClient({
-  businessSlug, services, staff
-}: { businessSlug: string; services: Service[]; staff: Staff[] }) {
-  const [serviceId, setServiceId] = useState<string>(services[0]?.id ?? "");
-  const [staffId, setStaffId] = useState<string>("auto");
+  businessSlug, services, staff, defaultStaffId, defaultServiceId
+}: { 
+  businessSlug: string; 
+  services: Service[]; 
+  staff: Staff[]; 
+  defaultStaffId?: string; 
+  defaultServiceId?: string;
+}) {
+  const [serviceId, setServiceId] = useState<string>(defaultServiceId ?? services[0]?.id ?? "");
+  const [staffId, setStaffId] = useState<string>(defaultStaffId ?? "auto");
   const [dateStr, setDateStr] = useState<string>(new Date().toISOString().slice(0,10));
 
   const [fastSlots, setFastSlots] = useState<Slot[]>([]);
