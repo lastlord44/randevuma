@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { addMinutes } from "date-fns";
 import { withBuffers, hasOverlap, weekday1to7, minutesToDate } from "@/lib/booking";
 import { z } from "zod";

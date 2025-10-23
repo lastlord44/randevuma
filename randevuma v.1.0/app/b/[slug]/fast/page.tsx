@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import FastClient from "./ui";
 import { notFound } from "next/navigation";
 

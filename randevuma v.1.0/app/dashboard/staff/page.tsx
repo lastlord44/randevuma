@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import StaffLinkCard from "./link-card";
 
 export default async function StaffDashboard() {
