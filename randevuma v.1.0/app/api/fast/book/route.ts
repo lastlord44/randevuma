@@ -11,11 +11,25 @@ const Body = z.object({
   customerName: z.string().min(2),
   customerTel: z.string().min(10),
   note: z.string().optional(),
+  _trap: z.string().optional(), // honeypot
 });
 
 export async function POST(req: NextRequest) {
   try {
-    const body = Body.parse(await req.json());
+    // --- 0) HONEYPOT (botlar için)
+    const raw = await req.json();
+    if (raw?._trap) {
+      return NextResponse.json({ ok: false, error: "Bad request" }, { status: 400 });
+    }
+
+    // --- 1) Zod parse
+    const body = Body.parse(raw);
+
+    // --- 2) Temiz telefon + basit kotalar
+    const phone = String(body.customerTel).replace(/\D/g, ""); // sadece rakam
+    if (phone.length < 10) {
+      return NextResponse.json({ ok: false, error: "Geçersiz telefon" }, { status: 400 });
+    }
 
     const business = await prisma.business.findUnique({ where: { slug: body.businessSlug } });
     if (!business) return NextResponse.json({ error: "Business not found" }, { status: 404 });
@@ -25,9 +39,55 @@ export async function POST(req: NextRequest) {
 
     const startAt = body.startAtISO;
     const { startWithBefore, end } = withBuffers(startAt, {
-      durationMin: service.durationMin, bufferBefore: service.bufferBefore, bufferAfter: service.bufferAfter,
+      durationMin: service.durationMin,
+      bufferBefore: service.bufferBefore,
+      bufferAfter: service.bufferAfter,
     });
 
+    // --- 3) Günlük / saatlik limitler (SMS yokken hızlı koruma)
+    const now = new Date();
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+
+    const [dayCount, hourCount, futureDup] = await Promise.all([
+      prisma.appointment.count({
+        where: {
+          businessId: business.id,
+          customerTel: phone,
+          startAt: { gte: dayStart },
+          status: { in: ["booked", "done"] },
+        },
+      }),
+      prisma.appointment.count({
+        where: {
+          businessId: business.id,
+          customerTel: phone,
+          createdAt: { gte: oneHourAgo },
+        },
+      }),
+      prisma.appointment.findFirst({
+        where: {
+          businessId: business.id,
+          customerTel: phone,
+          // Aynı gün aynı pencereyi ikinci kez kapatma (30dk yakınında)
+          startAt: { gte: new Date(startAt.getTime() - 30 * 60 * 1000) },
+          endAt: { lte: new Date(end.getTime() + 30 * 60 * 1000) },
+          status: { in: ["booked", "done"] },
+        },
+      }),
+    ]);
+
+    if (dayCount >= 2) {
+      return NextResponse.json({ ok: false, error: "Bu telefonla bugün en fazla 2 randevu alınabilir." }, { status: 429 });
+    }
+    if (hourCount >= 1) {
+      return NextResponse.json({ ok: false, error: "Lütfen biraz sonra tekrar deneyin." }, { status: 429 });
+    }
+    if (futureDup) {
+      return NextResponse.json({ ok: false, error: "Seçilen saate benzer bir randevunuz zaten var." }, { status: 409 });
+    }
+
+    // --- 4) Klasik transaction + overlap kontrolü
     const appt = await prisma.$transaction(async (tx) => {
       const weekday = weekday1to7(startAt);
       const wh = await tx.workingHours.findFirst({ where: { businessId: business.id, weekday } });
@@ -44,7 +104,9 @@ export async function POST(req: NextRequest) {
 
       const conflict = await tx.appointment.findFirst({
         where: {
-          businessId: business.id, staffId: body.staffId, status: { in: ["booked", "done"] },
+          businessId: business.id,
+          staffId: body.staffId,
+          status: { in: ["booked", "done"] },
           NOT: [{ endAt: { lte: startWithBefore } }, { startAt: { gte: end } }],
         },
       });
@@ -52,15 +114,21 @@ export async function POST(req: NextRequest) {
 
       return tx.appointment.create({
         data: {
-          businessId: business.id, staffId: body.staffId, serviceId: body.serviceId,
-          customerName: body.customerName, customerTel: body.customerTel,
-          startAt, endAt: end, status: "booked", note: body.note,
+          businessId: business.id,
+          staffId: body.staffId,
+          serviceId: body.serviceId,
+          customerName: body.customerName,
+          customerTel: phone,
+          startAt,
+          endAt: end,
+          status: "booked",
+          note: body.note,
         },
       });
     });
 
     return NextResponse.json({ ok: true, appointment: appt }, { status: 201 });
   } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e.message }, { status: 400 });
+    return NextResponse.json({ ok: false, error: e.message ?? "Error" }, { status: 400 });
   }
 }

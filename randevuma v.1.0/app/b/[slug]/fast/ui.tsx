@@ -23,6 +23,7 @@ export default function FastClient({
   const [modal, setModal] = useState(false);
   const [pending, setPending] = useState<{startISO:string; staffId:string}|null>(null);
   const [name, setName] = useState(""); const [tel, setTel] = useState("");
+  const [trap, setTrap] = useState(""); // honeypot
   const [loading, setLoading] = useState(false);
 
   async function load() {
@@ -62,6 +63,7 @@ export default function FastClient({
         businessSlug, serviceId,
         staffId: pending.staffId, startAtISO: pending.startISO,
         customerName: name, customerTel: tel,
+        _trap: trap, // honeypot
       })
     });
     const j = await res.json();
@@ -83,7 +85,7 @@ export default function FastClient({
       a.click();
       URL.revokeObjectURL(url);
       
-      setModal(false); setName(""); setTel("");
+      setModal(false); setName(""); setTel(""); setTrap("");
       load();
     } else {
       alert("Üzgünüz: " + (j.error || "Hata"));
@@ -181,6 +183,16 @@ export default function FastClient({
             <div className="text-sm text-gray-600">
               {format(new Date(pending.startISO), "d MMM EEE HH:mm", { locale: tr })} • {staff.find(x=>x.id===pending.staffId)?.name}
             </div>
+            {/* Honeypot: bot doldurursa reddedilecek */}
+            <input
+              name="_trap"
+              value={trap}
+              onChange={(e)=>setTrap(e.target.value)}
+              className="hidden"
+              tabIndex={-1}
+              aria-hidden="true"
+              autoComplete="off"
+            />
             <input
               className="border rounded px-2 h-9 w-full" placeholder="Adınız (min 2 karakter)"
               value={name} onChange={e=>setName(e.target.value)} minLength={2} required
@@ -193,7 +205,7 @@ export default function FastClient({
               <button type="submit" disabled={loading} className={`rounded bg-black text-white px-3 h-9 ${loading ? "opacity-70 cursor-not-allowed" : ""}`}>
                 {loading ? "Kaydediliyor..." : "Onayla"}
               </button>
-              <button type="button" className="rounded border px-3 h-9" onClick={()=>setModal(false)}>İptal</button>
+              <button type="button" className="rounded border px-3 h-9" onClick={()=>{setModal(false); setTrap("");}}>İptal</button>
             </div>
           </form>
         )}
