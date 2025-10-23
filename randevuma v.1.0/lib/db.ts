@@ -1,6 +1,5 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaLibSQL } from "@prisma/adapter-libsql";
-import { createClient } from "@libsql/client/web";
 
 // Turso (libSQL) ise adapter kullan
 let prisma: PrismaClient;
@@ -8,11 +7,10 @@ let prisma: PrismaClient;
 const isTurso = !!process.env.TURSO_DATABASE_URL;
 
 if (isTurso) {
-  const libsql = createClient({
+  const adapter = new PrismaLibSQL({
     url: process.env.TURSO_DATABASE_URL!,
     authToken: process.env.TURSO_AUTH_TOKEN!,
   });
-  const adapter = new PrismaLibSQL(libsql);
   prisma = new PrismaClient({ adapter });
 } else {
   prisma = new PrismaClient();
