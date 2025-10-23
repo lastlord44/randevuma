@@ -94,8 +94,8 @@ export default function FastClient({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-slate-50 p-4 md:p-8">
-      <div className="mx-auto max-w-5xl space-y-6">
+    <div className="min-h-screen bg-gradient-to-b from-white to-slate-50 p-4 md:p-8" suppressHydrationWarning>
+      <div className="mx-auto max-w-5xl space-y-6" suppressHydrationWarning>
         <div className="flex items-center justify-between">
           <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Hızlı Randevu</h1>
           <label className="flex items-center gap-2 text-sm">
