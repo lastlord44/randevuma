@@ -9,11 +9,17 @@ const Q = z.object({
   serviceId: z.string(),
   staffId: z.string().optional(),
   date: z.string().optional(), // YYYY-MM-DD
+  limit: z.string().optional(), // "3" (default) | "all" | number
+  step: z.coerce.number().optional(), // minutes, default 15
 });
 
 export async function GET(req: NextRequest) {
   try {
     const q = Q.parse(Object.fromEntries(req.nextUrl.searchParams));
+    const step = q.step ?? 15;
+    const wantAll = (q.limit?.toLowerCase() === "all");
+    const wanted = wantAll ? Number.MAX_SAFE_INTEGER : Number(q.limit ?? 3);
+    
     const business = await prisma.business.findUnique({ where: { slug: q.businessSlug } });
     if (!business) return NextResponse.json({ error: "Business not found" }, { status: 404 });
 
@@ -48,7 +54,7 @@ export async function GET(req: NextRequest) {
         orderBy: { startAt: "asc" },
       });
 
-      for (let t = new Date(open); t < close; t = addMinutes(t, 15)) {
+      for (let t = new Date(open); t < close; t = addMinutes(t, step)) {
         const { startWithBefore, end } = withBuffers(t, {
           durationMin: service.durationMin,
           bufferBefore: service.bufferBefore,
@@ -61,10 +67,10 @@ export async function GET(req: NextRequest) {
             staffId: s.id,
             label: t.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", hour12: false }),
           });
-          if (out.length >= 3) break;
+          if (out.length >= wanted) break;
         }
       }
-      if (out.length >= 3) break;
+      if (out.length >= wanted) break;
     }
 
     return NextResponse.json({ slots: out });

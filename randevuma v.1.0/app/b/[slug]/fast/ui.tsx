@@ -14,6 +14,8 @@ export default function FastClient({ businessSlug, services, staff }:{
   const [staffId, setStaffId] = useState<string>("auto");
   const [dateStr, setDateStr] = useState<string>(new Date().toISOString().slice(0,10));
   const [slots, setSlots] = useState<{startISO:string; staffId:string; label:string}[]>([]);
+  const [showAll, setShowAll] = useState(false);
+  const [allSlots, setAllSlots] = useState<{startISO:string; staffId:string; label:string}[]>([]);
   const [modal, setModal] = useState(false);
   const [pending, setPending] = useState<{startISO:string; staffId:string}|null>(null);
   const [name, setName] = useState(""); 
@@ -25,15 +27,30 @@ export default function FastClient({ businessSlug, services, staff }:{
     const qs = new URLSearchParams({ businessSlug, serviceId, date: dateStr });
     if (staffId !== "auto") qs.append("staffId", staffId);
     try {
+      // Quick 3 slots
       const res = await fetch(`/api/fast/next-slots?${qs.toString()}`, { cache: "no-store" });
       const j = await res.json();
-      console.log("Slots loaded:", j);
+      console.log("Quick slots loaded:", j);
       setSlots(j.slots || []);
+      
+      // All slots if enabled
+      if (showAll) {
+        const qsAll = new URLSearchParams(qs);
+        qsAll.set("limit", "all");
+        qsAll.set("step", "15");
+        const resAll = await fetch(`/api/fast/next-slots?${qsAll.toString()}`, { cache: "no-store" });
+        const jAll = await resAll.json();
+        console.log("All slots loaded:", jAll);
+        setAllSlots(jAll.slots || []);
+      } else {
+        setAllSlots([]);
+      }
     } catch (e) {
       console.error("Load error:", e);
       setSlots([]);
+      setAllSlots([]);
     }
-  }, [businessSlug, serviceId, staffId, dateStr]);
+  }, [businessSlug, serviceId, staffId, dateStr, showAll]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -94,14 +111,40 @@ export default function FastClient({ businessSlug, services, staff }:{
         <input type="date" value={dateStr} onChange={(e)=>setDateStr(e.target.value)} className="border rounded px-2 h-9"/>
       </div>
 
-      <div className="grid sm:grid-cols-3 gap-2">
-        {slots.length === 0 && <div className="text-sm text-gray-500">Uygun hızlı slot yok.</div>}
-        {slots.map(s => (
-          <button key={s.startISO+s.staffId} className="rounded border px-4 py-3 text-left hover:shadow-sm"
-            onClick={()=>{ setPending(s); setModal(true); }}>
-            <div className="text-lg font-semibold">{s.label}</div>
-          </button>
-        ))}
+      <div className="space-y-3">
+        <div className="text-sm font-medium">Hızlı 3 Saat</div>
+        <div className="grid sm:grid-cols-3 gap-2">
+          {slots.length === 0 && <div className="text-sm text-gray-500">Uygun hızlı slot yok.</div>}
+          {slots.map(s => (
+            <button key={s.startISO+s.staffId} className="rounded border px-4 py-3 text-left hover:shadow-sm"
+              onClick={()=>{ setPending(s); setModal(true); }}>
+              <div className="text-lg font-semibold">{s.label}</div>
+            </button>
+          ))}
+        </div>
+
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input type="checkbox" checked={showAll} 
+            onChange={(e)=>setShowAll(e.target.checked)} 
+            className="w-4 h-4" />
+          Tüm uygun saatleri göster
+        </label>
+
+        {showAll && (
+          <div className="rounded-2xl border p-4 bg-gray-50">
+            <div className="mb-3 text-sm font-medium text-gray-700">Tüm Uygun Saatler</div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
+              {allSlots.map(s => (
+                <button key={s.startISO+s.staffId}
+                  className="rounded-lg border bg-white px-3 py-2 text-sm hover:shadow-sm hover:border-blue-500 transition-all"
+                  onClick={()=>{ setPending(s); setModal(true); }}>
+                  {s.label}
+                </button>
+              ))}
+              {allSlots.length === 0 && <div className="col-span-full text-sm text-gray-500">Bugün uygun saat yok.</div>}
+            </div>
+          </div>
+        )}
       </div>
 
       {modal && pending && (
