@@ -19,6 +19,19 @@ export async function POST(req: NextRequest) {
     // --- 0) HONEYPOT (botlar için - sadece doluysa reject et)
     const raw = await req.json();
     if (raw?._trap && raw._trap.trim().length > 0) {
+      // Log honeypot trigger
+      const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip");
+      await prisma.riskLog.create({
+        data: {
+          businessId: raw.businessSlug || "unknown",
+          type: "honeypot",
+          ip: ip || undefined,
+          phone: raw.customerTel || undefined,
+          deviceId: req.cookies.get("rdid")?.value,
+          userAgent: req.headers.get("user-agent") || undefined,
+          path: req.nextUrl.pathname,
+        },
+      }).catch(() => {}); // silent fail
       return NextResponse.json({ ok: false, error: "Bad request" }, { status: 400 });
     }
 
@@ -77,13 +90,25 @@ export async function POST(req: NextRequest) {
       }),
     ]);
 
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip");
+    const deviceId = req.cookies.get("rdid")?.value;
+
     if (dayCount >= 2) {
+      await prisma.riskLog.create({
+        data: { businessId: business.id, type: "quota", ip, phone, deviceId, path: req.nextUrl.pathname },
+      }).catch(() => {});
       return NextResponse.json({ ok: false, error: "Bu telefonla bugün en fazla 2 randevu alınabilir." }, { status: 429 });
     }
     if (hourCount >= 1) {
+      await prisma.riskLog.create({
+        data: { businessId: business.id, type: "ratelimit", ip, phone, deviceId, path: req.nextUrl.pathname },
+      }).catch(() => {});
       return NextResponse.json({ ok: false, error: "Lütfen biraz sonra tekrar deneyin." }, { status: 429 });
     }
     if (futureDup) {
+      await prisma.riskLog.create({
+        data: { businessId: business.id, type: "duplicate", ip, phone, deviceId, path: req.nextUrl.pathname },
+      }).catch(() => {});
       return NextResponse.json({ ok: false, error: "Seçilen saate benzer bir randevunuz zaten var." }, { status: 409 });
     }
 

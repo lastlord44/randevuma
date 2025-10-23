@@ -170,5 +170,35 @@ model AppointmentHold {
   @@index([businessId, staffId, startAt])
 }
 
+model Ban {
+  id          String   @id @default(cuid())
+  businessId  String
+  type        String   // "ip" | "phone" | "device"
+  value       String   // IP address, phone number, or device ID
+  reason      String?
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+  createdBy   String?  // admin user ID
+
+  @@unique([businessId, type, value])
+  @@index([businessId, type, value])
+  @@index([expiresAt])
+}
+
+model RiskLog {
+  id          String   @id @default(cuid())
+  businessId  String
+  type        String   // "honeypot" | "ratelimit" | "quota" | "duplicate"
+  ip          String?
+  phone       String?
+  deviceId    String?
+  userAgent   String?
+  path        String?
+  createdAt   DateTime @default(now())
+
+  @@index([businessId, createdAt])
+  @@index([phone])
+  @@index([ip])
+}
 
 
