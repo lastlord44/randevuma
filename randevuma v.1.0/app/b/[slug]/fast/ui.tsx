@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
+import { buildICS } from "@/lib/ics";
 
 type Service = { id: string; name: string; durationMin: number; bufferBefore: number; bufferAfter: number };
 type Staff = { id: string; name: string };
@@ -67,6 +68,21 @@ export default function FastClient({
     setLoading(false);
     if (j.ok) {
       alert("Randevunuz alındı ✅");
+      // ICS takvim dosyası oluştur ve indir
+      const ics = buildICS({
+        title: services.find(s=>s.id===serviceId)?.name ?? "Randevu",
+        startISO: pending.startISO, 
+        endISO: j.appointment?.endAt ?? pending.startISO,
+        desc: "Randevunuz Randevuma ile oluşturuldu"
+      });
+      const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); 
+      a.href = url; 
+      a.download = "randevu.ics"; 
+      a.click();
+      URL.revokeObjectURL(url);
+      
       setModal(false); setName(""); setTel("");
       load();
     } else {
@@ -118,7 +134,7 @@ export default function FastClient({
             {fastSlots.map(s => (
               <button
                 key={s.startISO+s.staffId}
-                className="w-full rounded-2xl border px-4 py-3 text-left hover:shadow-sm"
+                className="w-full rounded-2xl border px-4 py-3 text-left hover:shadow-sm active:scale-[0.98] transition"
                 onClick={()=>{ setPending(s); setModal(true); }}
               >
                 <div className="text-lg font-semibold">{s.label}</div>
@@ -143,7 +159,7 @@ export default function FastClient({
                     {(staffMap[p.id] ?? []).map((s) => (
                       <button
                         key={s.startISO+s.staffId}
-                        className="rounded-xl px-2 py-2 text-sm border hover:shadow-sm"
+                        className="rounded-xl px-2 py-2 text-sm border hover:shadow-sm active:scale-[0.98] transition"
                         onClick={()=>{ setPending(s); setModal(true); }}
                       >
                         {s.label}
@@ -174,7 +190,7 @@ export default function FastClient({
               value={tel} onChange={e=>setTel(e.target.value.replace(/\D/g,''))} inputMode="numeric" pattern="\d{10,}" required
             />
             <div className="flex gap-2">
-              <button type="submit" disabled={loading} className="rounded bg-black text-white px-3 h-9">
+              <button type="submit" disabled={loading} className={`rounded bg-black text-white px-3 h-9 ${loading ? "opacity-70 cursor-not-allowed" : ""}`}>
                 {loading ? "Kaydediliyor..." : "Onayla"}
               </button>
               <button type="button" className="rounded border px-3 h-9" onClick={()=>setModal(false)}>İptal</button>

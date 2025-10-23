@@ -42,9 +42,18 @@ export async function GET(req: NextRequest) {
     const open = minutesToDate(base, wh.openMin);
     const close = minutesToDate(base, wh.closeMin);
 
+    // Personel yükünü hesapla (otomatik seçimde en az yüklüye öncelik)
+    const staffWithLoad = await Promise.all(staff.map(async s => {
+      const count = await prisma.appointment.count({
+        where: { businessId: business.id, staffId: s.id, startAt: { gte: open, lte: close }, status: { in: ["booked","done"] } }
+      });
+      return { ...s, load: count };
+    }));
+    const orderedStaff = q.staffId ? staffWithLoad : staffWithLoad.sort((a,b)=> a.load - b.load);
+
     const out: { startISO: string; staffId: string; label: string }[] = [];
 
-    for (const s of staff) {
+    for (const s of orderedStaff) {
       const appts = await prisma.appointment.findMany({
         where: {
           businessId: business.id, staffId: s.id,
