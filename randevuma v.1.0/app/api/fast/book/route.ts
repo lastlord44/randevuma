@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma} from "@/lib/prisma";
 import { withBuffers, weekday1to7 } from "@/lib/booking";
 import { z } from "zod";
 

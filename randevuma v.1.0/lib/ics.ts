@@ -12,13 +12,7 @@ export function buildICS({ title, startISO, endISO, desc }: { title: string; sta
     "END:VEVENT","END:VCALENDAR"
   ].join("\r\n");
 }
-
-function toICS(d: Date){ 
-  const p=(n:number)=>String(n).padStart(2,"0");
+function toICS(d: Date){ const p=(n:number)=>String(n).padStart(2,"0");
   return `${d.getUTCFullYear()}${p(d.getUTCMonth()+1)}${p(d.getUTCDate())}T${p(d.getUTCHours())}${p(d.getUTCMinutes())}00Z`;
 }
-
-function escapeICS(s:string){ 
-  return s.replace(/([,;])/g,"\\$1"); 
-}
-
+function escapeICS(s:string){ return s.replace(/([,;])/g,"\\$1"); }

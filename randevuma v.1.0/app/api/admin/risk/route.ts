@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 // GET: List risk logs (last 24h by default)
 export async function GET(req: NextRequest) {
