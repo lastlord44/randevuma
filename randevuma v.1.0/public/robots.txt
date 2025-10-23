@@ -1,0 +1,11 @@
+# Randevuma - Fast Booking System
+# /b/* rotaları indexlenmesin (müşteri hızlı randevu sayfaları)
+
+User-agent: *
+Disallow: /b/
+
+# API rotalarını da engelle
+Disallow: /api/
+
+# Sitemap (ileride eklenebilir)
+# Sitemap: https://yourdomain.com/sitemap.xml
