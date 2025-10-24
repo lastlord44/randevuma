@@ -6,12 +6,12 @@ let prismaGlobal: PrismaClientType | undefined
 export function getPrisma(): PrismaClientType {
   if (prismaGlobal) return prismaGlobal
 
-  // ENV'leri *runtime*'da oku + AGRESSIVELY temizle (CRLF, quotes, backslashes)
+  // ENV'leri *runtime*'da oku + temizle (CRLF, quotes - ama backslash'leri KORU!)
   const rawUrl = (process.env.TURSO_DATABASE_URL ?? process.env.DATABASE_URL ?? '')
-    .replace(/[\r\n"'\\]/g, '')  // Tüm \r, \n, quotes, backslash'leri temizle
+    .replace(/[\r\n"']/g, '')  // Sadece \r, \n, quotes temizle (URL'deki // için backslash kalsın)
     .trim()
   const rawToken = (process.env.TURSO_AUTH_TOKEN ?? '')
-    .replace(/[\r\n"'\\]/g, '')
+    .replace(/[\r\n"']/g, '')
     .trim()
 
   if (!rawUrl) {
