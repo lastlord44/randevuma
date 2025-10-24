@@ -111,6 +111,58 @@ npx playwright test tests/smoke.spec.ts
 
 ---
 
+## 🔁 İdempotency Test (Kritik!)
+
+Booking API'nin idempotent davranışını test et:
+
+```bash
+# Test 1: Aynı müşteri, aynı slot, 2 kez → 200 (idempotent)
+curl -X POST https://randevuma.com/api/fast/book \
+  -H "Content-Type: application/json" \
+  -d '{
+    "businessSlug": "demo",
+    "serviceId": "service-2",
+    "staffId": "staff-1",
+    "startAtISO": "2025-10-28T14:00:00Z",
+    "customerName": "Test User",
+    "customerTel": "+905551234567",
+    "note": "Test idempotency"
+  }'
+
+# Aynı isteği tekrar gönder → Beklenen: 200 + idempotent: true
+curl -X POST https://randevuma.com/api/fast/book \
+  -H "Content-Type: application/json" \
+  -d '{
+    "businessSlug": "demo",
+    "serviceId": "service-2",
+    "staffId": "staff-1",
+    "startAtISO": "2025-10-28T14:00:00Z",
+    "customerName": "Test User",
+    "customerTel": "+905551234567",
+    "note": "Test idempotency"
+  }'
+
+# Test 2: Farklı müşteri, aynı slot → 409 slot_taken
+curl -X POST https://randevuma.com/api/fast/book \
+  -H "Content-Type: application/json" \
+  -d '{
+    "businessSlug": "demo",
+    "serviceId": "service-2",
+    "staffId": "staff-1",
+    "startAtISO": "2025-10-28T14:00:00Z",
+    "customerName": "Another User",
+    "customerTel": "+905559876543",
+    "note": "Should fail"
+  }'
+```
+
+**Beklenen Sonuçlar:**
+- **İlk istek:** `201 Created` + `{ ok: true, appointment: {...} }`
+- **Aynı müşteri tekrar:** `200 OK` + `{ ok: true, appointment: {...}, idempotent: true }`
+- **Farklı müşteri:** `409 Conflict` + `{ ok: false, error: "slot_taken" }`
+
+---
+
 ## 🗺️ SEO Hızlı Kontrol
 
 **Sitemap:**

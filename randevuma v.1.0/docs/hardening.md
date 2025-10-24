@@ -36,7 +36,32 @@ npm run build && npm start
 ## Booking Güvenliği
 
 * `Appointment` unique: `(staffId, startAt)` → çifte rezervasyon engeli.
-* API `POST /api/fast/book`: idempotent; yarışta 409 `slot_taken`.
+* API `POST /api/fast/book`: **idempotent**; yarışta 409 `slot_taken`.
+
+### İdempotency Pattern (✨ KRİTİK)
+
+**Davranış:**
+1. **Aynı müşteri + aynı slot + tekrar istek** → `200 OK` (mevcut randevu döner, yeni oluşturulmaz)
+2. **Farklı müşteri + aynı slot** → `409 Conflict` ("slot_taken")
+3. **Race condition** (2 kullanıcı aynı anda) → Database unique constraint devreye girer → `409 Conflict`
+
+**Kod Akışı:**
+```
+1. İlk kontrol: `findFirst({ staffId, startAt })` → Varsa:
+   - Aynı telefon mu? → 200 (idempotent)
+   - Farklı telefon → 409 (slot_taken)
+
+2. Transaction içinde booking oluştur → Unique constraint race safety
+
+3. Catch P2002 (Prisma unique violation) → 409 (race condition fallback)
+```
+
+**Test Komutu:**
+```bash
+# Aynı isteği 2 kez gönder
+curl -X POST https://randevuma.com/api/fast/book -d '{ ... }'
+curl -X POST https://randevuma.com/api/fast/book -d '{ ... }' # → idempotent: true
+```
 
 ## Test & CI
 

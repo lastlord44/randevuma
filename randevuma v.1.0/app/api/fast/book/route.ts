@@ -112,48 +112,84 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Seçilen saate benzer bir randevunuz zaten var." }, { status: 409 });
     }
 
-    // --- 4) Klasik transaction + overlap kontrolü
-    const appt = await prisma.$transaction(async (tx) => {
-      const weekday = weekday1to7(startAt);
-      const wh = await tx.workingHours.findFirst({ where: { businessId: business.id, weekday } });
-      if (!wh) throw new Error("Working hours missing");
-
-      const mins = startAt.getHours() * 60 + startAt.getMinutes();
-      const endM = end.getHours() * 60 + end.getMinutes();
-      if (mins < wh.openMin || endM > wh.closeMin) throw new Error("Outside working hours");
-
-      const timeoff = await tx.staffTimeOff.findFirst({
-        where: { staffId: body.staffId, NOT: [{ endAt: { lte: startWithBefore } }, { startAt: { gte: end } }] },
-      });
-      if (timeoff) throw new Error("Staff unavailable");
-
-      const conflict = await tx.appointment.findFirst({
-        where: {
-          businessId: business.id,
-          staffId: body.staffId,
-          status: { in: ["booked", "done"] },
-          NOT: [{ endAt: { lte: startWithBefore } }, { startAt: { gte: end } }],
-        },
-      });
-      if (conflict) throw new Error("Time slot already taken");
-
-      return tx.appointment.create({
-        data: {
-          businessId: business.id,
-          staffId: body.staffId,
-          serviceId: body.serviceId,
-          customerName: body.customerName,
-          customerTel: phone,
-          startAt,
-          endAt: end,
-          status: "booked",
-          note: body.note,
-        },
-      });
+    // --- 4) İdempotency check: Aynı slot için zaten randevu var mı?
+    const existingAppointment = await prisma.appointment.findFirst({
+      where: {
+        staffId: body.staffId,
+        startAt,
+        status: { in: ["booked", "done"] },
+      },
     });
 
-    return NextResponse.json({ ok: true, appointment: appt }, { status: 201 });
+    if (existingAppointment) {
+      // Aynı müşteri mi tekrar deniyor? → İdempotent response
+      if (existingAppointment.customerTel === phone) {
+        return NextResponse.json(
+          { ok: true, appointment: existingAppointment, idempotent: true },
+          { status: 200 }
+        );
+      }
+      // Başka biri almış → 409 Conflict
+      return NextResponse.json(
+        { ok: false, error: "slot_taken", message: "Bu saat başka bir müşteri tarafından alındı" },
+        { status: 409 }
+      );
+    }
+
+    // --- 5) Klasik transaction + overlap kontrolü
+    try {
+      const appt = await prisma.$transaction(async (tx) => {
+        const weekday = weekday1to7(startAt);
+        const wh = await tx.workingHours.findFirst({ where: { businessId: business.id, weekday } });
+        if (!wh) throw new Error("Working hours missing");
+
+        const mins = startAt.getHours() * 60 + startAt.getMinutes();
+        const endM = end.getHours() * 60 + end.getMinutes();
+        if (mins < wh.openMin || endM > wh.closeMin) throw new Error("Outside working hours");
+
+        const timeoff = await tx.staffTimeOff.findFirst({
+          where: { staffId: body.staffId, NOT: [{ endAt: { lte: startWithBefore } }, { startAt: { gte: end } }] },
+        });
+        if (timeoff) throw new Error("Staff unavailable");
+
+        const conflict = await tx.appointment.findFirst({
+          where: {
+            businessId: business.id,
+            staffId: body.staffId,
+            status: { in: ["booked", "done"] },
+            NOT: [{ endAt: { lte: startWithBefore } }, { startAt: { gte: end } }],
+          },
+        });
+        if (conflict) throw new Error("Time slot already taken");
+
+        return tx.appointment.create({
+          data: {
+            businessId: business.id,
+            staffId: body.staffId,
+            serviceId: body.serviceId,
+            customerName: body.customerName,
+            customerTel: phone,
+            startAt,
+            endAt: end,
+            status: "booked",
+            note: body.note,
+          },
+        });
+      });
+
+      return NextResponse.json({ ok: true, appointment: appt }, { status: 201 });
+    } catch (txError: any) {
+      // Race condition fallback: Unique constraint violation
+      if (txError.code === 'P2002' && txError.meta?.target?.includes('staffId_startAt')) {
+        return NextResponse.json(
+          { ok: false, error: "slot_taken", message: "Bu saat başka bir müşteri tarafından alındı (race condition)" },
+          { status: 409 }
+        );
+      }
+      throw txError; // Diğer hataları üst catch'e fırlat
+    }
   } catch (e: any) {
+    console.error("[BOOKING ERROR]", e);
     return NextResponse.json({ ok: false, error: e.message ?? "Error" }, { status: 400 });
   }
 }
