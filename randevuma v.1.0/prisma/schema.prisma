@@ -70,7 +70,7 @@ model Service {
 model Staff {
   id        String   @id @default(cuid())
   name      String
-  slug      String
+  slug      String   // NOT NULL by default in Prisma
   email     String?
   phone     String?
   title     String?
@@ -86,6 +86,7 @@ model Staff {
   timeOffs     StaffTimeOff[]
 
   @@unique([businessId, slug])
+  @@index([slug])
   @@index([businessId])
 }
 

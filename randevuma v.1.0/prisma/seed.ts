@@ -1,5 +1,6 @@
-import { prisma } from '../lib/db';
+import { prisma } from '../lib/prisma';
 import * as bcrypt from 'bcryptjs';
+import { slugify } from '../lib/slugify';
 
 async function main() {
   console.log('🌱 Seeding database...');
