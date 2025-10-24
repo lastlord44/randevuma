@@ -4,7 +4,9 @@ import type { PrismaClient as PrismaClientType } from '@prisma/client'
 let prismaGlobal: PrismaClientType | undefined
 
 export function getPrisma(): PrismaClientType {
-  if (prismaGlobal) return prismaGlobal
+  // TEMPORARY: Bypass cache to force fresh client creation for debugging
+  // if (prismaGlobal) return prismaGlobal;
+  console.log('[getPrisma] FORCE CREATING NEW CLIENT (cache bypassed for debug)');
 
   // ENV'leri *runtime*'da oku + temizle (CRLF, quotes - ama backslash'leri KORU!)
   const rawUrl = (process.env.TURSO_DATABASE_URL ?? process.env.DATABASE_URL ?? '')
