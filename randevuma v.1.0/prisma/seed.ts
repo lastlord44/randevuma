@@ -1,4 +1,5 @@
-import { prisma } from '../lib/prisma';
+import { getPrisma } from '../lib/prisma';
+const prisma = getPrisma();
 import * as bcrypt from 'bcryptjs';
 import { slugify } from '../lib/slugify';
 
