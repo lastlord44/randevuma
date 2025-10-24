@@ -16,6 +16,10 @@ export async function GET() {
         isTurso: !!process.env.TURSO_DATABASE_URL,
         hasAuthToken: !!process.env.TURSO_AUTH_TOKEN,
         siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'not set',
+        // DEBUG: Show first 30 chars of env values
+        dbUrlPreview: (process.env.DATABASE_URL || '').substring(0, 30) || 'EMPTY',
+        tursoUrlPreview: (process.env.TURSO_DATABASE_URL || '').substring(0, 30) || 'EMPTY',
+        tursoTokenPreview: (process.env.TURSO_AUTH_TOKEN || '').substring(0, 20) || 'EMPTY',
       },
       database: {
         status: 'unknown',
