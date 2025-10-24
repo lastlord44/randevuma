@@ -50,6 +50,16 @@ export async function POST(req: NextRequest) {
     const business = await prisma.business.findUnique({ where: { slug: body.businessSlug } });
     if (!business) return NextResponse.json({ error: "Business not found" }, { status: 404 });
 
+    // Log booking request (phone hashed for privacy)
+    const phoneHash = require('crypto').createHash('sha256').update(phone).digest('hex').substring(0, 8);
+    console.info('BOOK_REQ', {
+      shopSlug: body.businessSlug,
+      serviceId: body.serviceId,
+      staffId: body.staffId,
+      startISO: body.startAtISO.toISOString(),
+      phoneHash,
+    });
+
     const service = await prisma.service.findUnique({ where: { id: body.serviceId } });
     if (!service) return NextResponse.json({ error: "Service not found" }, { status: 404 });
 

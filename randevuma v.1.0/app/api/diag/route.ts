@@ -11,6 +11,8 @@ export async function GET() {
       timestamp: new Date().toISOString(),
       environment: {
         nodeEnv: process.env.NODE_ENV,
+        vercelEnv: process.env.VERCEL_ENV || 'local',
+        commit: process.env.VERCEL_GIT_COMMIT_SHA?.substring(0, 7) || 'unknown',
         isTurso: !!process.env.TURSO_DATABASE_URL,
         hasAuthToken: !!process.env.TURSO_AUTH_TOKEN,
         siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'not set',
