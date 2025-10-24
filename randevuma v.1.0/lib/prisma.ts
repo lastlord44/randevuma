@@ -4,6 +4,9 @@ import { PrismaClient } from '@prisma/client'
 let prisma: PrismaClient | undefined
 
 export function getPrisma() {
+  // TEMPORARY: Force recreation to debug ENV issues
+  prisma = undefined;
+  
   if (!prisma) {
     // DEBUG: Log raw ENV values before processing
     console.log('[getPrisma] RAW ENV CHECK:');
