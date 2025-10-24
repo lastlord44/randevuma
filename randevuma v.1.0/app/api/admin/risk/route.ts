@@ -6,7 +6,7 @@ export const runtime = 'nodejs';
 
 // GET: List risk logs (last 24h by default)
 export async function GET(req: NextRequest) {
-  const prisma = getPrisma();
+  const prisma = await getPrisma();
   try {
     const { searchParams } = req.nextUrl;
     const businessId = searchParams.get("businessId");

@@ -169,6 +169,7 @@ main()
     process.exit(1);
   })
   .finally(async () => {
+    const prisma = await getPrisma();
     await prisma.$disconnect();
   });
 

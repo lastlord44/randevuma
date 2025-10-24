@@ -27,14 +27,15 @@ export async function getPrisma(): Promise<PrismaClientType> {
   }
 
   // ESM paketleri için *dynamic import* kullan
-  const [{ PrismaClient }, { createClient }, { PrismaLibSQL }] = await Promise.all([
+  const [{ PrismaClient }, { PrismaLibSQL }] = await Promise.all([
     import('@prisma/client'),
-    import('@libsql/client'),
     import('@prisma/adapter-libsql'),
   ])
 
-  const libsql = createClient({ url, authToken: token || undefined })
-  const adapter = new PrismaLibSQL(libsql)
+  const adapter = new PrismaLibSQL({
+    url,
+    authToken: token || undefined,
+  })
 
   prismaGlobal = new PrismaClient({
     adapter,
