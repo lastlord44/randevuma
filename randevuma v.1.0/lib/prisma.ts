@@ -14,6 +14,11 @@ export function getPrisma(): PrismaClientType {
     .replace(/[\r\n"']/g, '')
     .trim()
 
+  // DEBUG: Log env values
+  console.log('[getPrisma] rawUrl:', rawUrl || 'EMPTY')
+  console.log('[getPrisma] rawUrl length:', rawUrl.length)
+  console.log('[getPrisma] rawToken length:', rawToken.length)
+
   if (!rawUrl) {
     // Fail fast: env eksikse gizemli hatalar yerine net mesaj
     throw new Error('DB_URL_MISSING: Set TURSO_DATABASE_URL or DATABASE_URL in Vercel (no trailing CRLF).')
@@ -27,17 +32,23 @@ export function getPrisma(): PrismaClientType {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { PrismaClient } = require('@prisma/client')
 
+  console.log('[getPrisma] Creating libsql client with url:', rawUrl.substring(0, 30) + '...')
+  console.log('[getPrisma] authToken present:', !!rawToken)
+  
   const libsql = createClient({
     url: rawUrl,
     authToken: rawToken || undefined,
   })
 
+  console.log('[getPrisma] libsql client created, creating adapter...')
   const adapter = new PrismaLibSQL(libsql)
 
+  console.log('[getPrisma] adapter created, creating PrismaClient...')
   prismaGlobal = new PrismaClient({
     adapter,
     log: process.env.NODE_ENV === 'production' ? ['error'] : ['error', 'warn'],
   }) as PrismaClientType
 
+  console.log('[getPrisma] ✅ PrismaClient created successfully')
   return prismaGlobal
 }
