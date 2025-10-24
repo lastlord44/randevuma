@@ -2,6 +2,10 @@
 import type { MetadataRoute } from 'next'
 import { prisma } from '@/lib/prisma'
 
+// Force Node.js runtime to avoid build-time Prisma/Turso adapter issues
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://randevuma.com'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
