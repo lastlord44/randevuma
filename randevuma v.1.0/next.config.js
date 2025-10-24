@@ -35,7 +35,18 @@ const nextConfig = {
   
   webpack: (config, { isServer }) => {
     if (isServer) {
-      config.externals.push('@libsql/client', '@prisma/adapter-libsql');
+      // Ensure externals is an array, then push
+      if (!Array.isArray(config.externals)) {
+        config.externals = [config.externals];
+      }
+      config.externals.push(
+        ({ request }, callback) => {
+          if (request === '@libsql/client' || request === '@prisma/adapter-libsql') {
+            return callback(null, `commonjs ${request}`);
+          }
+          callback();
+        }
+      );
     }
     config.module.rules.push({
       test: /\/(README\.md|LICENSE)$/i,
