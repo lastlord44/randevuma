@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
+// Force Node.js runtime (required for Prisma with Turso adapter)
+export const runtime = 'nodejs';
+
 const BanSchema = z.object({
   businessId: z.string(),
   type: z.enum(["ip", "phone", "device"]),

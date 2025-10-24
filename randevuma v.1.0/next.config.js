@@ -33,9 +33,9 @@ const nextConfig = {
     ];
   },
   
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      // Ensure externals is an array, then push
+  webpack: (config, { isServer, nextRuntime }) => {
+    // Only externalize for Node.js runtime (NOT Edge)
+    if (isServer && nextRuntime !== 'edge') {
       if (!Array.isArray(config.externals)) {
         config.externals = [config.externals];
       }

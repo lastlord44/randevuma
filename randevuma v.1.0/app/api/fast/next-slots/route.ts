@@ -4,6 +4,9 @@ import { addMinutes } from "date-fns";
 import { withBuffers, hasOverlap, weekday1to7, minutesToDate } from "@/lib/booking";
 import { z } from "zod";
 
+// Force Node.js runtime (required for Prisma with Turso adapter)
+export const runtime = 'nodejs';
+
 const Q = z.object({
   businessSlug: z.string(),
   serviceId: z.string(),
