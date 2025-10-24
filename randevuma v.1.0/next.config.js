@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Next 15+: serverComponentsExternalPackages taşındı
-  serverExternalPackages: ['@libsql/client', '@prisma/adapter-libsql'],
-  
   async headers() {
     return [
       {
@@ -33,21 +30,7 @@ const nextConfig = {
     ];
   },
   
-  webpack: (config, { isServer, nextRuntime }) => {
-    // Only externalize for Node.js runtime (NOT Edge)
-    if (isServer && nextRuntime !== 'edge') {
-      if (!Array.isArray(config.externals)) {
-        config.externals = [config.externals];
-      }
-      config.externals.push(
-        ({ request }, callback) => {
-          if (request === '@libsql/client' || request === '@prisma/adapter-libsql') {
-            return callback(null, `commonjs ${request}`);
-          }
-          callback();
-        }
-      );
-    }
+  webpack: (config) => {
     config.module.rules.push({
       test: /\/(README\.md|LICENSE)$/i,
       type: 'asset/source',

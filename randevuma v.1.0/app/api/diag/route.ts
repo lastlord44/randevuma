@@ -25,7 +25,7 @@ export async function GET() {
       urlHost = `PARSE_ERROR: ${e.message}`;
     }
     
-    const prisma = getPrisma();
+    const prisma = await getPrisma();
     const diagnostics: any = {
       timestamp: new Date().toISOString(),
       environment: {

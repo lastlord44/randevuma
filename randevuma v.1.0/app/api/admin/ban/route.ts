@@ -19,7 +19,7 @@ const UnbanSchema = z.object({
 
 // GET: List all active bans
 export async function GET(req: NextRequest) {
-  const prisma = getPrisma();
+  const prisma = await getPrisma();
   try {
     const { searchParams } = req.nextUrl;
     const businessId = searchParams.get("businessId");
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
 
 // POST: Add ban
 export async function POST(req: NextRequest) {
-  const prisma = getPrisma();
+  const prisma = await getPrisma();
   try {
     const body = BanSchema.parse(await req.json());
 
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
 
 // DELETE: Remove ban
 export async function DELETE(req: NextRequest) {
-  const prisma = getPrisma();
+  const prisma = await getPrisma();
   try {
     const body = UnbanSchema.parse(await req.json());
 

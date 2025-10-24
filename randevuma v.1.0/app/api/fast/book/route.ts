@@ -22,7 +22,7 @@ function phoneHash(tel: string) {
 }
 
 export async function POST(req: NextRequest) {
-  const prisma = getPrisma();
+  const prisma = await getPrisma();
   try {
     // --- 0) HONEYPOT
     const raw = await req.json();

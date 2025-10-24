@@ -7,7 +7,6 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  // Prisma sadece şemayı okurken buraya bakıyor. Runtime'da adapter'i (lib/prisma.ts) kullanıyoruz.
   url      = env("DATABASE_URL")
 }
 

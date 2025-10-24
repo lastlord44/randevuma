@@ -17,9 +17,9 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@libsql/client": "^0.15.15",
+    "@libsql/client": "^0.13.0",
     "@modelcontextprotocol/sdk": "^1.20.1",
-    "@prisma/adapter-libsql": "^6.18.0",
+    "@prisma/adapter-libsql": "^6.17.1",
     "@prisma/client": "^6.17.1",
     "chrome-remote-interface": "^0.33.3",
     "class-variance-authority": "^0.7.1",

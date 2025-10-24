@@ -1,59 +1,45 @@
 // lib/prisma.ts
-import { PrismaClient } from '@prisma/client'
+import type { PrismaClient as PrismaClientType } from '@prisma/client'
 
-let prisma: PrismaClient | undefined
+let prismaGlobal: PrismaClientType | undefined
 
-export function getPrisma() {
-  // TEMPORARY: Force recreation to debug ENV issues
-  prisma = undefined;
-  
-  if (!prisma) {
-    // DEBUG: Log raw ENV values before processing
-    console.log('[getPrisma] RAW ENV CHECK:');
-    console.log('  TURSO_DATABASE_URL exists:', !!process.env.TURSO_DATABASE_URL);
-    console.log('  DATABASE_URL exists:', !!process.env.DATABASE_URL);
-    console.log('  TURSO_AUTH_TOKEN exists:', !!process.env.TURSO_AUTH_TOKEN);
-
-    // ENV'leri *runtime*'da oku + temizle (CRLF, quotes, literal \r\n)
-    const rawUrl = (process.env.TURSO_DATABASE_URL ?? process.env.DATABASE_URL ?? '')
-      .replace(/\\r\\n/g, '')  // literal \r\n string
-      .replace(/[\r\n"']/g, '')  // actual CRLF + quotes
-      .trim()
-    const rawToken = (process.env.TURSO_AUTH_TOKEN ?? '')
-      .replace(/\\r\\n/g, '')
-      .replace(/[\r\n"']/g, '')
-      .trim()
-
-    console.log('[getPrisma] AFTER CLEANING:');
-    console.log('  URL length:', rawUrl.length);
-    console.log('  URL starts with libsql:', rawUrl.startsWith('libsql://'));
-    console.log('  Token length:', rawToken.length);
-
-    if (!rawUrl) {
-      // Fail fast: env eksikse gizemli hatalar yerine net mesaj
-      throw new Error('DB_URL_MISSING: Set TURSO_DATABASE_URL or DATABASE_URL in Vercel (no trailing CRLF).')
-    }
-
-    // Dinamik import — Edge bundle'a sızmaz
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { createClient } = require('@libsql/client')
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { PrismaLibSQL } = require('@prisma/adapter-libsql')
-
-    const libsql = createClient({
-      url: rawUrl,
-      authToken: rawToken || undefined,
-    })
-
-    const adapter = new PrismaLibSQL(libsql)
-
-    prisma = new PrismaClient({
-      adapter,
-      log: process.env.NODE_ENV === 'production' ? ['error'] : ['error', 'warn'],
-    })
-  }
-  return prisma
+function cleanEnv(v: string | undefined) {
+  if (!v) return ''
+  // 1) uç boşlukları kırp
+  let s = v.trim()
+  // 2) sonda gerçek newline'ları at
+  s = s.replace(/\r?\n+$/g, '')
+  // 3) sonda *literal* \r\n kaçışlarını at (backslash-r backslash-n)
+  s = s.replace(/\\r\\n$/g, '')
+  // 4) başka bir şey elleme (özellikle //)
+  return s
 }
 
-// Backward compatibility
-export { prisma as db }
+export async function getPrisma(): Promise<PrismaClientType> {
+  if (prismaGlobal) return prismaGlobal
+
+  const url = cleanEnv(process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL)
+  const token = cleanEnv(process.env.TURSO_AUTH_TOKEN)
+
+  if (!url) {
+    // Fail fast: gizemli "URL undefined" yerine net mesaj
+    throw new Error('DB_URL_MISSING: TURSO_DATABASE_URL veya DATABASE_URL boş. Vercel UI\'dan tek satır olarak girin.')
+  }
+
+  // ESM paketleri için *dynamic import* kullan
+  const [{ PrismaClient }, { createClient }, { PrismaLibSQL }] = await Promise.all([
+    import('@prisma/client'),
+    import('@libsql/client'),
+    import('@prisma/adapter-libsql'),
+  ])
+
+  const libsql = createClient({ url, authToken: token || undefined })
+  const adapter = new PrismaLibSQL(libsql)
+
+  prismaGlobal = new PrismaClient({
+    adapter,
+    log: process.env.NODE_ENV === 'production' ? ['error'] : ['error', 'warn'],
+  }) as unknown as PrismaClientType
+
+  return prismaGlobal
+}

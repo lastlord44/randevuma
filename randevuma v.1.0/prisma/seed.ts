@@ -1,10 +1,10 @@
 import { getPrisma } from '../lib/prisma';
-const prisma = getPrisma();
 import * as bcrypt from 'bcryptjs';
 import { slugify } from '../lib/slugify';
 
 async function main() {
   console.log('🌱 Seeding database...');
+  const prisma = await getPrisma();
 
   const adminPassword = await bcrypt.hash('admin123', 10);
   const admin = await prisma.user.upsert({

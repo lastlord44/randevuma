@@ -9,7 +9,7 @@ export default async function Page({
   params: Promise<{ slug: string }>;
   searchParams?: Promise<{ staffId?: string; serviceId?: string }>;
 }) {
-  const prisma = getPrisma();
+  const prisma = await getPrisma();
   const { slug } = await params;
   const sp = searchParams ? await searchParams : {};
   

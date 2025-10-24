@@ -17,7 +17,7 @@ const Q = z.object({
 });
 
 export async function GET(req: NextRequest) {
-  const prisma = getPrisma();
+  const prisma = await getPrisma();
   try {
     const q = Q.parse(Object.fromEntries(req.nextUrl.searchParams));
     const step = q.step ?? 15;
