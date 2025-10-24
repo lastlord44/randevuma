@@ -7,24 +7,6 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    // DEBUG: Check ENV before getPrisma
-    const rawDbUrl = process.env.DATABASE_URL || '';
-    const rawTursoUrl = process.env.TURSO_DATABASE_URL || '';
-    const rawToken = process.env.TURSO_AUTH_TOKEN || '';
-    
-    let urlHost = 'EMPTY';
-    let urlProtocol = 'EMPTY';
-    try {
-      const testUrl = (rawTursoUrl || rawDbUrl).trim().replace(/[\r\n"']/g, '');
-      if (testUrl) {
-        const parsed = new URL(testUrl);
-        urlHost = parsed.host;
-        urlProtocol = parsed.protocol;
-      }
-    } catch (e: any) {
-      urlHost = `PARSE_ERROR: ${e.message}`;
-    }
-    
     const prisma = await getPrisma();
     const diagnostics: any = {
       timestamp: new Date().toISOString(),
@@ -32,19 +14,7 @@ export async function GET() {
         nodeEnv: process.env.NODE_ENV,
         vercelEnv: process.env.VERCEL_ENV || 'local',
         commit: process.env.VERCEL_GIT_COMMIT_SHA?.substring(0, 7) || 'unknown',
-        isTurso: !!process.env.TURSO_DATABASE_URL,
-        hasAuthToken: !!process.env.TURSO_AUTH_TOKEN,
         siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'not set',
-        // DEBUG: Show first 30 chars of env values
-        dbUrlPreview: (process.env.DATABASE_URL || '').substring(0, 30) || 'EMPTY',
-        tursoUrlPreview: (process.env.TURSO_DATABASE_URL || '').substring(0, 30) || 'EMPTY',
-        tursoTokenPreview: (process.env.TURSO_AUTH_TOKEN || '').substring(0, 20) || 'EMPTY',
-        // DEBUG: Parsed URL info
-        urlHost,
-        urlProtocol,
-        rawDbUrlLen: rawDbUrl.length,
-        rawTursoUrlLen: rawTursoUrl.length,
-        tokenLen: rawToken.length,
       },
       database: {
         status: 'unknown',
