@@ -5,6 +5,12 @@ let prisma: PrismaClient | undefined
 
 export function getPrisma() {
   if (!prisma) {
+    // DEBUG: Log raw ENV values before processing
+    console.log('[getPrisma] RAW ENV CHECK:');
+    console.log('  TURSO_DATABASE_URL exists:', !!process.env.TURSO_DATABASE_URL);
+    console.log('  DATABASE_URL exists:', !!process.env.DATABASE_URL);
+    console.log('  TURSO_AUTH_TOKEN exists:', !!process.env.TURSO_AUTH_TOKEN);
+
     // ENV'leri *runtime*'da oku + temizle (CRLF, quotes, literal \r\n)
     const rawUrl = (process.env.TURSO_DATABASE_URL ?? process.env.DATABASE_URL ?? '')
       .replace(/\\r\\n/g, '')  // literal \r\n string
@@ -14,6 +20,11 @@ export function getPrisma() {
       .replace(/\\r\\n/g, '')
       .replace(/[\r\n"']/g, '')
       .trim()
+
+    console.log('[getPrisma] AFTER CLEANING:');
+    console.log('  URL length:', rawUrl.length);
+    console.log('  URL starts with libsql:', rawUrl.startsWith('libsql://'));
+    console.log('  Token length:', rawToken.length);
 
     if (!rawUrl) {
       // Fail fast: env eksikse gizemli hatalar yerine net mesaj
