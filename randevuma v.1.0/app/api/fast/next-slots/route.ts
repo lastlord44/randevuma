@@ -35,9 +35,13 @@ export async function GET(req: NextRequest) {
     if (!wh) return NextResponse.json({ slots: [] });
 
     const staff = q.staffId
-      ? await prisma.staff.findMany({ where: { businessId: business.id, id: q.staffId, active: true } })
+      ? await prisma.staff.findMany({ 
+          where: { businessId: business.id, id: q.staffId, active: true },
+          select: { id: true, name: true }
+        })
       : await prisma.staff.findMany({
           where: { businessId: business.id, active: true, skills: { some: { serviceId: service.id } } },
+          select: { id: true, name: true },
           orderBy: { name: "asc" },
         });
     if (staff.length === 0) return NextResponse.json({ slots: [] });
@@ -63,6 +67,7 @@ export async function GET(req: NextRequest) {
           startAt: { gte: open }, endAt: { lte: close },
           status: { in: ["booked", "done"] },
         },
+        select: { startAt: true, endAt: true },
         orderBy: { startAt: "asc" },
       });
 

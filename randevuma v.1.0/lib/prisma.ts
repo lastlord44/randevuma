@@ -1,40 +1,33 @@
 import { PrismaClient } from '@prisma/client'
-import { PrismaLibSQL } from '@prisma/adapter-libsql'
 
-declare global {
-  // Hot-reload'da tekil instance
-  // eslint-disable-next-line no-var
-  var prisma: PrismaClient | undefined
+// Dinamik import: edge bundle'a sızmaz
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { createClient } = require('@libsql/client')
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { PrismaLibSQL } = require('@prisma/adapter-libsql')
+
+const url = process.env.TURSO_DATABASE_URL!
+const authToken = process.env.TURSO_AUTH_TOKEN
+
+// Global libsql client (tek kez) + Prisma instance
+const g = globalThis as unknown as { __libsql?: any; __prisma?: PrismaClient }
+
+// LibSQL client'i bir kez oluştur ve reuse et
+if (!g.__libsql && url) {
+  g.__libsql = createClient({ url, authToken })
 }
 
-// Turso için libSQL client oluştur
-function createPrismaClient(): PrismaClient {
-  const isTurso = !!process.env.TURSO_DATABASE_URL
+// Prisma adapter + client
+const adapter = g.__libsql ? new PrismaLibSQL(g.__libsql) : undefined
 
-  if (isTurso) {
-    // Turso/LibSQL adapter - pass config directly
-    const adapter = new PrismaLibSQL({
-      url: process.env.TURSO_DATABASE_URL!,
-      authToken: process.env.TURSO_AUTH_TOKEN,
-    })
-
-    return new PrismaClient({
-      adapter,
-      log: process.env.NODE_ENV === 'production' ? ['error'] : ['error', 'warn'],
-    })
-  }
-
-  // Standard SQLite (local development)
-  return new PrismaClient({
+export const prisma =
+  g.__prisma ??
+  new PrismaClient({
+    adapter,
     log: process.env.NODE_ENV === 'production' ? ['error'] : ['error', 'warn'],
   })
-}
 
-export const prisma = global.prisma ?? createPrismaClient()
-
-if (process.env.NODE_ENV !== 'production') {
-  global.prisma = prisma
-}
+if (!g.__prisma) g.__prisma = prisma
 
 export { prisma as db }
 

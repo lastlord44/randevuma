@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "app/api/fast/book/route.ts": {
+      "memory": 1024,
+      "maxDuration": 15
+    },
+    "app/api/fast/next-slots/route.ts": {
+      "memory": 512,
+      "maxDuration": 10
+    }
+  }
+}
+
