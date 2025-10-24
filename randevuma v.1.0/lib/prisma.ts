@@ -4,9 +4,10 @@ import { PrismaClient } from '@prisma/client'
 // Dinamik require -> edge bundle'a sızmaz
 const maybeCreateClient = () => {
   try {
-    // Try TURSO_DATABASE_URL first, then DATABASE_URL
-    const url = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL
-    const authToken = process.env.TURSO_AUTH_TOKEN
+    // Try TURSO_DATABASE_URL first, then DATABASE_URL (trim whitespace/newlines)
+    const rawUrl = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL
+    const url = rawUrl?.trim()
+    const authToken = process.env.TURSO_AUTH_TOKEN?.trim()
     
     if (!url) {
       console.warn('[Prisma] No TURSO_DATABASE_URL or DATABASE_URL found, using standard client')
