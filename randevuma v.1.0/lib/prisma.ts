@@ -6,9 +6,13 @@ let prismaGlobal: PrismaClientType | undefined
 export function getPrisma(): PrismaClientType {
   if (prismaGlobal) return prismaGlobal
 
-  // ENV'leri *runtime*'da oku + trim et
-  const rawUrl = (process.env.TURSO_DATABASE_URL ?? process.env.DATABASE_URL ?? '').trim()
-  const rawToken = (process.env.TURSO_AUTH_TOKEN ?? '').trim()
+  // ENV'leri *runtime*'da oku + AGRESSIVELY temizle (CRLF, quotes, backslashes)
+  const rawUrl = (process.env.TURSO_DATABASE_URL ?? process.env.DATABASE_URL ?? '')
+    .replace(/[\r\n"'\\]/g, '')  // Tüm \r, \n, quotes, backslash'leri temizle
+    .trim()
+  const rawToken = (process.env.TURSO_AUTH_TOKEN ?? '')
+    .replace(/[\r\n"'\\]/g, '')
+    .trim()
 
   if (!rawUrl) {
     // Fail fast: env eksikse gizemli hatalar yerine net mesaj
