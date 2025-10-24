@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 
 export async function GET(req: Request, { params }: { params: Promise<{ slug: string; staffSlug: string }> }) {
+  const prisma = getPrisma();
   const { slug, staffSlug } = await params;
   const site = process.env.NEXT_PUBLIC_SITE_URL || "";
   const base = new URL(`/b/${slug}/fast`, site || "http://localhost:3000");

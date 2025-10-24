@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 
 // Force Node.js runtime (required for Prisma with Turso adapter)
 export const runtime = 'nodejs';
 
 // GET: List risk logs (last 24h by default)
 export async function GET(req: NextRequest) {
+  const prisma = getPrisma();
   try {
     const { searchParams } = req.nextUrl;
     const businessId = searchParams.get("businessId");

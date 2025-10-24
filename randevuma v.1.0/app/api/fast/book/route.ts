@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { z } from "zod";
 import crypto from "crypto";
 
@@ -22,6 +22,7 @@ function phoneHash(tel: string) {
 }
 
 export async function POST(req: NextRequest) {
+  const prisma = getPrisma();
   try {
     // --- 0) HONEYPOT
     const raw = await req.json();

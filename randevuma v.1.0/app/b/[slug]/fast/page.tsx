@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import FastClient from "./ui";
 import { notFound } from "next/navigation";
 
@@ -9,6 +9,7 @@ export default async function Page({
   params: Promise<{ slug: string }>;
   searchParams?: Promise<{ staffId?: string; serviceId?: string }>;
 }) {
+  const prisma = getPrisma();
   const { slug } = await params;
   const sp = searchParams ? await searchParams : {};
   

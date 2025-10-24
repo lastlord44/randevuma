@@ -1,6 +1,6 @@
 // app/sitemap.ts
 import type { MetadataRoute } from 'next'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 
 // Force Node.js runtime to avoid build-time Prisma/Turso adapter issues
 export const runtime = 'nodejs'
@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic'
 const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://randevuma.com'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const prisma = getPrisma();
   // Businesses & Staff'ı çek
   const businesses = await prisma.business.findMany({
     select: { id: true, slug: true },

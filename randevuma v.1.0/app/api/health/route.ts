@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { getPrisma } from '@/lib/prisma';
 
 // Force Node.js runtime (required for Prisma with Turso adapter)
 export const runtime = 'nodejs';
@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const startTime = Date.now();
-  
+
   try {
     // Basic health checks
     const checks = {
@@ -21,6 +21,7 @@ export async function GET() {
 
     // Test database connection
     try {
+      const prisma = getPrisma();
       await prisma.$queryRaw`SELECT 1`;
       checks.database = 'connected';
     } catch (error) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { addMinutes } from "date-fns";
 import { withBuffers, hasOverlap, weekday1to7, minutesToDate } from "@/lib/booking";
 import { z } from "zod";
@@ -17,6 +17,7 @@ const Q = z.object({
 });
 
 export async function GET(req: NextRequest) {
+  const prisma = getPrisma();
   try {
     const q = Q.parse(Object.fromEntries(req.nextUrl.searchParams));
     const step = q.step ?? 15;
