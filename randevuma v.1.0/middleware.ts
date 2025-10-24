@@ -7,6 +7,15 @@ const LIMIT = 20;         // IP başına istek/dk (fast endpoints)
 const BUCKET = new Map<string, { c: number; ts: number }>();
 
 export function middleware(req: NextRequest) {
+  const p = req.nextUrl.pathname;
+  
+  // 301 Redirect: Eski ?staffId= parametreli linkleri temizle
+  if (p.startsWith("/b/") && req.nextUrl.searchParams.has("staffId")) {
+    const url = req.nextUrl.clone();
+    url.searchParams.delete("staffId");
+    return NextResponse.redirect(url, { status: 301 });
+  }
+
   const res = NextResponse.next();
 
   // Cihaz kimliği (lightweight)
@@ -17,7 +26,6 @@ export function middleware(req: NextRequest) {
   }
 
   // Sadece fast API'leri sınırlayalım
-  const p = req.nextUrl.pathname;
   if (!p.startsWith("/api/fast/")) return res;
 
   const ip =
@@ -33,4 +41,4 @@ export function middleware(req: NextRequest) {
   return res;
 }
 
-export const config = { matcher: ["/api/fast/:path*"] };
+export const config = { matcher: ["/api/fast/:path*", "/b/:path*"] };

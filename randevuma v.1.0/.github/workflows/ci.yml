@@ -1,0 +1,33 @@
+name: CI - Smoke
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: Install Playwright (browsers)
+        run: npx playwright install --with-deps
+
+      - name: Run smoke tests (prod URL)
+        env:
+          BASE_URL: https://randevuma.com
+        run: npx playwright test
+

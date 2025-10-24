@@ -128,10 +128,12 @@ model Appointment {
   staffId String
   staff   Staff  @relation(fields: [staffId], references: [id], onDelete: Cascade)
 
+  @@unique([staffId, startAt])
   @@index([businessId])
   @@index([serviceId])
   @@index([staffId])
   @@index([startAt])
+  @@index([businessId, staffId, startAt])
 }
 
 model StaffSkill {
