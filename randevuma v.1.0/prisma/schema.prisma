@@ -54,6 +54,7 @@ model Service {
   bufferBefore Int      @default(0)
   bufferAfter  Int      @default(0)
   active       Boolean  @default(true)
+  deletedAt    DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -64,6 +65,7 @@ model Service {
   skills       StaffSkill[]
 
   @@index([businessId])
+  @@index([businessId, deletedAt])
 }
 
 model Staff {
@@ -74,6 +76,7 @@ model Staff {
   phone     String?
   title     String?
   active    Boolean  @default(true)
+  deletedAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -84,7 +87,7 @@ model Staff {
   skills       StaffSkill[]
   timeOffs     StaffTimeOff[]
 
-  @@unique([businessId, slug])
+  @@unique([businessId, slug, deletedAt])
   @@index([slug])
   @@index([businessId])
 }
@@ -115,6 +118,7 @@ model Appointment {
   endAt         DateTime
   status        String   @default("booked")
   note          String?
+  deletedAt     DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -204,6 +208,26 @@ model RiskLog {
   @@index([businessId, createdAt])
   @@index([phone])
   @@index([ip])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  at         DateTime @default(now())
+  actor      String   // admin id or 'system'
+  action     String   // e.g. 'staff.soft_delete'
+  targetType String   // 'Staff' | 'Service' | 'Appointment' | ...
+  targetId   String
+  meta       String?  // JSON string (keep small)
+
+  @@index([targetType, targetId])
+  @@index([at])
+}
+
+model FeatureFlag {
+  key       String   @id
+  enabled   Boolean  @default(false)
+  note      String?
+  updatedAt DateTime @updatedAt
 }
 
 

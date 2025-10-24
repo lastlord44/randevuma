@@ -26,10 +26,11 @@ export async function GET() {
 
     // Database diagnostics
     try {
-      const [businesses, staff, appointments] = await Promise.all([
+      const [businesses, staff, appointments, flags] = await Promise.all([
         prisma.business.count(),
         prisma.staff.count(),
         prisma.appointment.count(),
+        prisma.featureFlag.findMany({ select: { key: true, enabled: true, note: true } }),
       ]);
 
       diagnostics.database = {
@@ -38,6 +39,8 @@ export async function GET() {
         staffCount: staff,
         appointmentCount: appointments,
       };
+      
+      diagnostics.flags = flags;
     } catch (error: any) {
       diagnostics.database = {
         status: 'error',
